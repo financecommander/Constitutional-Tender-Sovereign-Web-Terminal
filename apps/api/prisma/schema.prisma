@@ -1,0 +1,132 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum KycStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum Currency {
+  USD
+  EUR
+  CHF
+  SGD
+  KYD
+  GBP
+}
+
+enum TransactionType {
+  BUY
+  SELL
+  TELEPORT
+  WITHDRAWAL
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+model User {
+  id           String    @id @default(uuid())
+  authId       String    @unique @map("auth_id")
+  email        String    @unique
+  fullName     String    @map("full_name")
+  kycStatus    KycStatus @default(PENDING) @map("kyc_status")
+  baseCurrency Currency  @default(USD) @map("base_currency")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  holdings     Holding[]
+  transactions Transaction[]
+
+  @@map("users")
+}
+
+model Vault {
+  id                    String   @id @default(uuid())
+  name                  String
+  location              String
+  country               String
+  regulatoryJurisdiction String  @map("regulatory_jurisdiction")
+  supportedAssets       String[] @map("supported_assets")
+  isActive              Boolean  @default(true) @map("is_active")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  holdings     Holding[]
+  transactionsFrom Transaction[] @relation("TransactionFromVault")
+  transactionsTo   Transaction[] @relation("TransactionToVault")
+
+  @@map("vaults")
+}
+
+model Asset {
+  id             String   @id @default(uuid())
+  name           String
+  symbol         String   @unique
+  metalType      String   @map("metal_type")
+  weightOz       Decimal  @map("weight_oz")
+  livePriceBid   Decimal  @default(0) @map("live_price_bid")
+  livePriceAsk   Decimal  @default(0) @map("live_price_ask")
+  spreadPercent  Decimal  @default(0) @map("spread_percent")
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  holdings     Holding[]
+  transactions Transaction[]
+
+  @@map("assets")
+}
+
+model Holding {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  assetId   String   @map("asset_id")
+  vaultId   String   @map("vault_id")
+  quantity  Decimal
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user  User  @relation(fields: [userId], references: [id])
+  asset Asset @relation(fields: [assetId], references: [id])
+  vault Vault @relation(fields: [vaultId], references: [id])
+
+  @@unique([userId, assetId, vaultId])
+  @@map("holdings")
+}
+
+model Transaction {
+  id              String            @id @default(uuid())
+  userId          String            @map("user_id")
+  assetId         String            @map("asset_id")
+  type            TransactionType
+  status          TransactionStatus @default(PENDING)
+  quantity        Decimal
+  pricePerUnit    Decimal           @map("price_per_unit")
+  totalAmount     Decimal           @map("total_amount")
+  currency        Currency          @default(USD)
+  fromVaultId     String?           @map("from_vault_id")
+  toVaultId       String?           @map("to_vault_id")
+  fxRate          Decimal?          @map("fx_rate")
+  notes           String?
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+
+  user      User   @relation(fields: [userId], references: [id])
+  asset     Asset  @relation(fields: [assetId], references: [id])
+  fromVault Vault? @relation("TransactionFromVault", fields: [fromVaultId], references: [id])
+  toVault   Vault? @relation("TransactionToVault", fields: [toVaultId], references: [id])
+
+  @@map("transactions")
+}
