@@ -25,14 +25,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         rateLimit: true,
         jwksRequestsPerMinute: 5,
         // Remove trailing slash if present before adding .well-known path
-        jwksUri: `${process.env.AUTH0_ISSUER_URL?.replace(/\/$/, '')}/.well-known/jwks.json`,
+        jwksUri: `${process.env.AUTH0_ISSUER_URL!.replace(/\/$/, '')}/.well-known/jwks.json`,
       }),
 
       // Validate the audience claim
-      audience: process.env.AUTH0_AUDIENCE,
+      audience: process.env.AUTH0_AUDIENCE!,
       
       // Validate the issuer claim
-      issuer: process.env.AUTH0_ISSUER_URL,
+      issuer: process.env.AUTH0_ISSUER_URL!.replace(/\/$/, ''),
       
       // Specify allowed algorithms (RS256 only for security)
       algorithms: ['RS256'],
@@ -53,8 +53,17 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     }
 
     // Extract permissions from token (Auth0 convention)
-    // Permissions can be stored in different claim formats depending on Auth0 configuration
-    const permissions = payload.permissions || payload['https://your-app.com/permissions'] || [];
+    // Standard claim: payload.permissions (when RBAC is enabled in Auth0 API settings)
+    // Custom claim: Replace with your actual namespace if using custom claims
+    const customNamespace = process.env.AUTH0_CUSTOM_NAMESPACE || '';
+    const permissions = payload.permissions || 
+                       (customNamespace ? payload[`${customNamespace}/permissions`] : []) || 
+                       [];
+    
+    // Extract user metadata if using custom claims
+    const metadata = customNamespace ? 
+                    (payload[`${customNamespace}/user_metadata`] || {}) : 
+                    {};
     
     // Return user object that will be attached to request.user
     // This supports future RBAC implementation
@@ -62,8 +71,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       authId: payload.sub,  // Auth0 user ID (sub claim)
       email: payload.email,
       permissions: permissions,  // For RBAC - can be enhanced with DB lookup
-      // Add any other claims you need from the token
-      metadata: payload['https://your-app.com/user_metadata'] || {},
+      metadata: metadata,
     };
   }
 }

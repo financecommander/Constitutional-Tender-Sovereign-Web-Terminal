@@ -269,13 +269,9 @@ import { useAuth0 } from '@auth0/auth0-react';
 const { getAccessTokenSilently } = useAuth0();
 const token = await getAccessTokenSilently();
 
-// ✅ ALTERNATIVE: Backend sets httpOnly cookie (if not using Auth0 SDK)
-// This is backend code (e.g., in a custom login endpoint):
-response.cookie('token', token, {
-  httpOnly: true,      // Prevents JavaScript access
-  secure: true,        // HTTPS only
-  sameSite: 'strict'   // CSRF protection
-});
+// Note: With Auth0 architecture, the backend doesn't handle login or issue tokens.
+// Auth0 manages authentication and issues tokens directly to the frontend.
+// The Auth0 SDK is the recommended approach for token management.
 ```
 
 #### 3. **Missing Audience/Issuer Validation** ✅ MITIGATED

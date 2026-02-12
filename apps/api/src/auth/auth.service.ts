@@ -26,11 +26,16 @@ export class AuthService {
 
     // If user doesn't exist in DB, create them (first login)
     if (!dbUser && user.email) {
+      // Try to extract full name from token metadata or email
+      const fullName = user.metadata?.name || 
+                      user.metadata?.fullName || 
+                      user.email.split('@')[0];
+      
       dbUser = await this.prisma.user.create({
         data: {
           authId: user.authId,
           email: user.email,
-          fullName: user.email.split('@')[0], // Placeholder, should be from token metadata
+          fullName: fullName,
         },
       });
     }
