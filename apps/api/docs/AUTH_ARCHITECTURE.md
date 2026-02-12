@@ -261,16 +261,20 @@ algorithms: ['RS256']
 
 #### 2. **Token Leakage** ⚠️ MONITOR
 ```typescript
-// Frontend best practices:
-// ❌ DON'T: Store in localStorage (vulnerable to XSS)
+// Frontend: ❌ DON'T store in localStorage (vulnerable to XSS)
 localStorage.setItem('token', token);
 
-// ✅ DO: Store in httpOnly cookie or use Auth0 SDK
-// httpOnly cookies prevent JavaScript access
+// ✅ RECOMMENDED: Use Auth0 SDK (handles secure storage automatically)
+import { useAuth0 } from '@auth0/auth0-react';
+const { getAccessTokenSilently } = useAuth0();
+const token = await getAccessTokenSilently();
+
+// ✅ ALTERNATIVE: Backend sets httpOnly cookie (if not using Auth0 SDK)
+// This is backend code (e.g., in a custom login endpoint):
 response.cookie('token', token, {
-  httpOnly: true,
-  secure: true,    // HTTPS only
-  sameSite: 'strict'
+  httpOnly: true,      // Prevents JavaScript access
+  secure: true,        // HTTPS only
+  sameSite: 'strict'   // CSRF protection
 });
 ```
 

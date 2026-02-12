@@ -162,6 +162,8 @@ describe('Auth (e2e)', () => {
 });
 ```
 
+**Note**: These are example test patterns. Actual E2E test implementation should be added to the project's test suite based on your testing infrastructure.
+
 ## Common Patterns
 
 ### Check Permissions

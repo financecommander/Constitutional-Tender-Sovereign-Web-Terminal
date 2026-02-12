@@ -24,7 +24,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         cache: true,
         rateLimit: true,
         jwksRequestsPerMinute: 5,
-        jwksUri: `${process.env.AUTH0_ISSUER_URL}.well-known/jwks.json`,
+        // Remove trailing slash if present before adding .well-known path
+        jwksUri: `${process.env.AUTH0_ISSUER_URL?.replace(/\/$/, '')}/.well-known/jwks.json`,
       }),
 
       // Validate the audience claim
