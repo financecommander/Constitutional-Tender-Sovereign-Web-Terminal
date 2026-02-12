@@ -15,6 +15,27 @@ import { passportJwtSecret } from 'jwks-rsa';
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor() {
+    // Validate required environment variables
+    const issuerUrl = process.env.AUTH0_ISSUER_URL;
+    const audience = process.env.AUTH0_AUDIENCE;
+
+    if (!issuerUrl) {
+      throw new Error(
+        'AUTH0_ISSUER_URL environment variable is required. ' +
+        'Please set it in your .env file (e.g., https://your-domain.auth0.com/)'
+      );
+    }
+
+    if (!audience) {
+      throw new Error(
+        'AUTH0_AUDIENCE environment variable is required. ' +
+        'Please set it in your .env file (e.g., https://your-api-identifier.com)'
+      );
+    }
+
+    // Normalize issuer URL (remove trailing slash)
+    const normalizedIssuer = issuerUrl.replace(/\/$/, '');
+
     super({
       // Extract token from Authorization header
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -24,15 +45,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         cache: true,
         rateLimit: true,
         jwksRequestsPerMinute: 5,
-        // Remove trailing slash if present before adding .well-known path
-        jwksUri: `${process.env.AUTH0_ISSUER_URL!.replace(/\/$/, '')}/.well-known/jwks.json`,
+        jwksUri: `${normalizedIssuer}/.well-known/jwks.json`,
       }),
 
       // Validate the audience claim
-      audience: process.env.AUTH0_AUDIENCE!,
+      audience: audience,
       
       // Validate the issuer claim
-      issuer: process.env.AUTH0_ISSUER_URL!.replace(/\/$/, ''),
+      issuer: normalizedIssuer,
       
       // Specify allowed algorithms (RS256 only for security)
       algorithms: ['RS256'],

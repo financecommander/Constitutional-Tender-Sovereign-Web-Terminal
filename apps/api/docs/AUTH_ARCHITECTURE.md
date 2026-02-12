@@ -316,12 +316,23 @@ async deleteUser(@CurrentUser() user: UserFromToken) {
 ```typescript
 // ✅ SECURE: Prisma uses parameterized queries
 await this.prisma.user.findUnique({
-  where: { authId: user.authId }, // Parameterized
+  where: { authId: user.authId }, // Parameterized, safe
 });
 
-// ❌ VULNERABLE: Raw SQL without sanitization
+// ✅ SECURE: $queryRaw with template literals is also parameterized
 await this.prisma.$queryRaw`SELECT * FROM users WHERE authId = ${user.authId}`;
+
+// ❌ VULNERABLE: $queryRawUnsafe with string concatenation
+await this.prisma.$queryRawUnsafe(
+  'SELECT * FROM users WHERE authId = ' + user.authId  // SQL injection risk!
+);
+
+// ❌ VULNERABLE: Direct string interpolation in $queryRawUnsafe
+await this.prisma.$queryRawUnsafe(
+  `SELECT * FROM users WHERE authId = '${user.authId}'`  // SQL injection risk!
+);
 ```
+**Note**: Prisma's standard queries and `$queryRaw` with template literals are safe. Only `$queryRawUnsafe` with string concatenation/interpolation is vulnerable.
 
 #### 7. **Token Expiration** ⚠️ CONFIGURE
 ```typescript
