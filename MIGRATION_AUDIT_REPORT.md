@@ -559,7 +559,7 @@ with tab3:
 
 # Footer
 st.divider()
-st.caption(f"Powered by Gemini AI • Live data from metals.live • {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+st.caption(f"Powered by Gemini AI • Live data from metals.live • {datetime.now().strftime('%Y-%m-%d %H:%M UTC')}")
 ```
 
 **Result:** Same functionality, **4x less code**, **zero custom UI**, **no database**, **AI handles all logic**.
