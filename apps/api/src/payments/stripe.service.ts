@@ -36,7 +36,7 @@ export class StripeService {
   /**
    * Create a payment intent
    * 
-   * @param amount - Amount in dollars
+   * @param amount - Amount in dollars (will be converted to cents for Stripe)
    * @param userId - User ID for metadata
    * @returns Payment intent with client secret
    */
@@ -183,7 +183,7 @@ export class StripeService {
    * Refund a payment (full or partial)
    * 
    * @param chargeId - Charge ID to refund
-   * @param amount - Optional amount in dollars (if not provided, full refund)
+   * @param amount - Optional amount in dollars (will be converted to cents for Stripe; if not provided, full refund)
    * @returns Refund object
    */
   async refundPayment(
