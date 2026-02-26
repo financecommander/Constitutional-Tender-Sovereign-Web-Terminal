@@ -48,6 +48,9 @@ model User {
 
   holdings     Holding[]
   transactions Transaction[]
+  bankAccounts   BankAccount[]
+  wireTransfers  WireTransfer[]
+  cryptoPayments CryptoPayment[]
 
   @@map("users")
 }
@@ -106,6 +109,77 @@ model Holding {
   @@map("holdings")
 }
 
+enum PaymentMethod {
+  CARD
+  ACH
+  WIRE
+  CRYPTO
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+model BankAccount {
+  id            String   @id @default(uuid())
+  userId        String   @map("user_id")
+  plaidItemId   String   @map("plaid_item_id")
+  plaidAccountId String  @map("plaid_account_id")
+  accountName   String   @map("account_name")
+  accountMask   String   @map("account_mask")
+  accountType   String   @map("account_type")
+  accountSubtype String? @map("account_subtype")
+  isPrimary     Boolean  @default(false) @map("is_primary")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("bank_accounts")
+}
+
+model WireTransfer {
+  id                String        @id @default(uuid())
+  userId            String        @map("user_id")
+  transactionId     String?       @map("transaction_id")
+  amount            Decimal
+  currency          Currency      @default(USD)
+  status            PaymentStatus @default(PENDING)
+  referenceCode     String        @unique @map("reference_code")
+  bankName          String?       @map("bank_name")
+  bankRoutingNumber String?       @map("bank_routing_number")
+  bankAccountNumber String?       @map("bank_account_number")
+  settlementDate    DateTime?     @map("settlement_date")
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("wire_transfers")
+}
+
+model CryptoPayment {
+  id               String        @id @default(uuid())
+  userId           String        @map("user_id")
+  transactionId    String?       @map("transaction_id")
+  chargeId         String        @unique @map("charge_id")
+  amount           Decimal
+  currency         String        @default("USDC")
+  status           PaymentStatus @default(PENDING)
+  blockchainTxHash String?       @map("blockchain_tx_hash")
+  confirmedAt      DateTime?     @map("confirmed_at")
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("crypto_payments")
+}
+
 model Transaction {
   id              String            @id @default(uuid())
   userId          String            @map("user_id")
@@ -119,6 +193,7 @@ model Transaction {
   fromVaultId     String?           @map("from_vault_id")
   toVaultId       String?           @map("to_vault_id")
   fxRate          Decimal?          @map("fx_rate")
+  paymentMethod   PaymentMethod?    @map("payment_method")
   notes           String?
   createdAt       DateTime          @default(now()) @map("created_at")
   updatedAt       DateTime          @updatedAt @map("updated_at")
