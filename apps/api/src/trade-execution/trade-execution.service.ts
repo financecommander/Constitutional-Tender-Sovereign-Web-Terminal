@@ -207,4 +207,26 @@ export class TradeExecutionService {
       },
     });
   }
+
+  async getVaults() {
+    return this.prisma.vault.findMany({
+      where: { isActive: true },
+      orderBy: { name: 'asc' },
+    });
+  }
+
+  async getTransactions(userId: string, options?: { limit?: number; offset?: number }) {
+    const { limit = 20, offset = 0 } = options || {};
+    return this.prisma.transaction.findMany({
+      where: { userId },
+      include: {
+        asset: true,
+        fromVault: true,
+        toVault: true,
+      },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      skip: offset,
+    });
+  }
 }

@@ -1,8 +1,9 @@
-import { Controller, Post, Body, Get } from '@nestjs/common';
+import { Controller, Post, Body, Get, Query } from '@nestjs/common';
 import { TradeExecutionService } from './trade-execution.service';
 import { CurrentUser, UserFromToken } from '../auth/decorators/current-user.decorator';
 import { CreateTradeDto } from './dto/create-trade.dto';
 import { CreateTeleportDto } from './dto/create-teleport.dto';
+import { Public } from '../auth/decorators/public.decorator';
 
 @Controller('trade')
 export class TradeExecutionController {
@@ -28,5 +29,23 @@ export class TradeExecutionController {
   @Get('holdings')
   getHoldings(@CurrentUser() user: UserFromToken) {
     return this.tradeExecutionService.getHoldings(user.authId);
+  }
+
+  @Get('vaults')
+  @Public()
+  getVaults() {
+    return this.tradeExecutionService.getVaults();
+  }
+
+  @Get('transactions')
+  getTransactions(
+    @CurrentUser() user: UserFromToken,
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
+  ) {
+    return this.tradeExecutionService.getTransactions(user.authId, {
+      limit: limit ? parseInt(limit, 10) : undefined,
+      offset: offset ? parseInt(offset, 10) : undefined,
+    });
   }
 }

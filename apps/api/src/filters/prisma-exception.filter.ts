@@ -36,13 +36,15 @@ export class PrismaExceptionFilter implements ExceptionFilter {
   private isPrismaError(
     exception: unknown,
   ): exception is { code: string; message: string } {
-    return (
-      typeof exception === 'object' &&
-      exception !== null &&
-      'code' in exception &&
-      typeof (exception as Record<string, unknown>).code === 'string' &&
-      (exception as Record<string, unknown>).code.toString().startsWith('P')
-    );
+    if (
+      typeof exception !== 'object' ||
+      exception === null ||
+      !('code' in exception)
+    ) {
+      return false;
+    }
+    const code = (exception as Record<string, unknown>).code;
+    return typeof code === 'string' && code.startsWith('P');
   }
 
   private mapPrismaError(code: string): { status: number; message: string } {
