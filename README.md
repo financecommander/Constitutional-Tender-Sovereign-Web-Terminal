@@ -13,12 +13,13 @@ For a comprehensive architectural review and status report, see [ARCHITECTURAL_R
 
 | Component | Status | Notes |
 |-----------|--------|-------|
-| Authentication | ✅ Production Ready | Auth0 JWT with RS256 |
-| Database Schema | ✅ Complete | Prisma with PostgreSQL |
-| Trading API | 🟡 In Progress | Controllers built, services needed |
-| Frontend UI | 🟡 In Progress | Components built, API integration needed |
+| Authentication | ✅ Production Ready | Auth0 JWT with RS256, global guard |
+| Database Schema | ✅ Complete | Prisma with PostgreSQL, indexed |
+| Input Validation | ✅ Complete | class-validator DTOs, ValidationPipe |
+| CORS | ✅ Locked Down | Restricted to FRONTEND_URL |
+| Trading API | 🟡 In Progress | Transactional, Decimal math, balance checks |
+| Frontend UI | 🟡 In Progress | Error boundary, route protection, components |
 | Testing | ❌ Not Started | Test infrastructure needed |
-| Documentation | 🟡 Partial | Excellent auth docs, project docs needed |
 
 ## 🚀 Technology Stack
 
@@ -109,6 +110,10 @@ constitutional-tender-sovereign-web-terminal/
    # Backend API
    cp apps/api/.env.example apps/api/.env
    # Edit apps/api/.env with your Auth0 and database credentials
+
+   # Frontend
+   cp apps/web/.env.local.example apps/web/.env.local
+   # Edit apps/web/.env.local with your Auth0 client credentials
    ```
 
 4. **Setup database**
@@ -134,9 +139,9 @@ constitutional-tender-sovereign-web-terminal/
 # Build all apps
 npm run build
 
-# Build specific app
-npm run build --filter=@ct-terminal/api
-npm run build --filter=@ct-terminal/web
+# Build specific app (via Turborepo)
+npx turbo run build --filter=@ct-terminal/api
+npx turbo run build --filter=@ct-terminal/web
 ```
 
 ## 📚 Documentation
@@ -149,23 +154,20 @@ npm run build --filter=@ct-terminal/web
 
 ### Project Overview
 - [ARCHITECTURAL_REVIEW.md](./ARCHITECTURAL_REVIEW.md) - Comprehensive architectural review and status report
+- [docs/migration-audit/](./docs/migration-audit/) - Historical migration analysis documents
 
 ## 🔐 Security
 
 - ✅ Auth0 JWT with RS256 algorithm
 - ✅ JWKS-based token verification
 - ✅ Audience/issuer validation
-- ✅ Environment variable validation
-- ✅ CodeQL security scanning (0 vulnerabilities)
-- ⚠️ CORS needs production configuration
+- ✅ Environment variable validation (fail-fast on boot)
+- ✅ CORS locked to FRONTEND_URL
+- ✅ Global JWT guard (default-protected, opt-out with @Public())
+- ✅ Input validation via class-validator DTOs
+- ✅ Prisma exception filter (no schema leakage)
+- ✅ Transactional trade operations with balance checks
 - ⚠️ Rate limiting needs implementation
-
-## 📊 Project Metrics
-
-- **Total Lines of Code:** ~964
-- **Test Coverage:** 0% (testing infrastructure needed)
-- **Security Scan:** ✅ Passing (CodeQL)
-- **Build Status:** ⚠️ Dependencies not installed
 
 ## 🤝 Contributing
 
@@ -186,6 +188,6 @@ For questions or issues, please open a GitHub issue.
 
 ---
 
-**Last Updated:** February 14, 2026  
-**Version:** 0.1.0  
+**Last Updated:** February 27, 2026
+**Version:** 0.1.0
 **Status:** Development

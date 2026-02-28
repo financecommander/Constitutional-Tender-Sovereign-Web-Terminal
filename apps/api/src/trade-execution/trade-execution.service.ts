@@ -1,156 +1,201 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { PrismaClient } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
+import { CreateTradeDto } from './dto/create-trade.dto';
+import { CreateTeleportDto } from './dto/create-teleport.dto';
 
-interface TradeDto {
-  userId: string;
-  assetId: string;
-  vaultId: string;
-  quantity: number;
-  currency: string;
-}
-
-interface TeleportDto {
-  userId: string;
-  assetId: string;
-  fromVaultId: string;
-  toVaultId: string;
-  quantity: number;
-}
+type TxClient = Parameters<Parameters<PrismaClient['$transaction']>[0]>[0];
 
 @Injectable()
 export class TradeExecutionService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async executeBuy(dto: TradeDto) {
-    const asset = await this.prisma.asset.findUniqueOrThrow({
-      where: { id: dto.assetId },
-    });
+  async executeBuy(userId: string, dto: CreateTradeDto) {
+    return this.prisma.$transaction(async (tx: TxClient) => {
+      const asset = await tx.asset.findUnique({
+        where: { id: dto.assetId },
+      });
 
-    const totalAmount =
-      Number(asset.livePriceAsk) * dto.quantity;
+      if (!asset) {
+        throw new NotFoundException('Asset not found');
+      }
 
-    const transaction = await this.prisma.transaction.create({
-      data: {
-        userId: dto.userId,
-        assetId: dto.assetId,
-        type: 'BUY',
-        status: 'COMPLETED',
-        quantity: dto.quantity,
-        pricePerUnit: asset.livePriceAsk,
-        totalAmount,
-        currency: dto.currency as any,
-        toVaultId: dto.vaultId,
-      },
-    });
+      if (!asset.isActive) {
+        throw new BadRequestException('Asset is not currently available for trading');
+      }
 
-    await this.prisma.holding.upsert({
-      where: {
-        userId_assetId_vaultId: {
-          userId: dto.userId,
+      const totalAmount = asset.livePriceAsk.toNumber() * dto.quantity;
+
+      const transaction = await tx.transaction.create({
+        data: {
+          userId,
+          assetId: dto.assetId,
+          type: 'BUY',
+          status: 'COMPLETED',
+          quantity: dto.quantity,
+          pricePerUnit: asset.livePriceAsk,
+          totalAmount,
+          currency: dto.currency as 'USD' | 'EUR' | 'CHF' | 'SGD' | 'KYD' | 'GBP',
+          toVaultId: dto.vaultId,
+        },
+      });
+
+      await tx.holding.upsert({
+        where: {
+          userId_assetId_vaultId: {
+            userId,
+            assetId: dto.assetId,
+            vaultId: dto.vaultId,
+          },
+        },
+        update: {
+          quantity: { increment: dto.quantity },
+        },
+        create: {
+          userId,
           assetId: dto.assetId,
           vaultId: dto.vaultId,
+          quantity: dto.quantity,
         },
-      },
-      update: {
-        quantity: { increment: dto.quantity },
-      },
-      create: {
-        userId: dto.userId,
-        assetId: dto.assetId,
-        vaultId: dto.vaultId,
-        quantity: dto.quantity,
-      },
-    });
+      });
 
-    return transaction;
+      return transaction;
+    });
   }
 
-  async executeSell(dto: TradeDto) {
-    const asset = await this.prisma.asset.findUniqueOrThrow({
-      where: { id: dto.assetId },
-    });
+  async executeSell(userId: string, dto: CreateTradeDto) {
+    return this.prisma.$transaction(async (tx: TxClient) => {
+      const asset = await tx.asset.findUnique({
+        where: { id: dto.assetId },
+      });
 
-    const totalAmount =
-      Number(asset.livePriceBid) * dto.quantity;
+      if (!asset) {
+        throw new NotFoundException('Asset not found');
+      }
 
-    const transaction = await this.prisma.transaction.create({
-      data: {
-        userId: dto.userId,
-        assetId: dto.assetId,
-        type: 'SELL',
-        status: 'COMPLETED',
-        quantity: dto.quantity,
-        pricePerUnit: asset.livePriceBid,
-        totalAmount,
-        currency: dto.currency as any,
-        fromVaultId: dto.vaultId,
-      },
-    });
+      if (!asset.isActive) {
+        throw new BadRequestException('Asset is not currently available for trading');
+      }
 
-    await this.prisma.holding.update({
-      where: {
-        userId_assetId_vaultId: {
-          userId: dto.userId,
-          assetId: dto.assetId,
-          vaultId: dto.vaultId,
+      const holding = await tx.holding.findUnique({
+        where: {
+          userId_assetId_vaultId: {
+            userId,
+            assetId: dto.assetId,
+            vaultId: dto.vaultId,
+          },
         },
-      },
-      data: {
-        quantity: { decrement: dto.quantity },
-      },
-    });
+      });
 
-    return transaction;
+      if (!holding || holding.quantity.toNumber() < dto.quantity) {
+        throw new BadRequestException(
+          'Insufficient holdings. ' +
+          `Available: ${holding?.quantity.toString() ?? '0'}, ` +
+          `Requested: ${dto.quantity}`,
+        );
+      }
+
+      const totalAmount = asset.livePriceBid.toNumber() * dto.quantity;
+
+      const transaction = await tx.transaction.create({
+        data: {
+          userId,
+          assetId: dto.assetId,
+          type: 'SELL',
+          status: 'COMPLETED',
+          quantity: dto.quantity,
+          pricePerUnit: asset.livePriceBid,
+          totalAmount,
+          currency: dto.currency as 'USD' | 'EUR' | 'CHF' | 'SGD' | 'KYD' | 'GBP',
+          fromVaultId: dto.vaultId,
+        },
+      });
+
+      await tx.holding.update({
+        where: {
+          userId_assetId_vaultId: {
+            userId,
+            assetId: dto.assetId,
+            vaultId: dto.vaultId,
+          },
+        },
+        data: {
+          quantity: { decrement: dto.quantity },
+        },
+      });
+
+      return transaction;
+    });
   }
 
-  async executeTeleport(dto: TeleportDto) {
-    const transaction = await this.prisma.transaction.create({
-      data: {
-        userId: dto.userId,
-        assetId: dto.assetId,
-        type: 'TELEPORT',
-        status: 'COMPLETED',
-        quantity: dto.quantity,
-        pricePerUnit: 0,
-        totalAmount: 0,
-        fromVaultId: dto.fromVaultId,
-        toVaultId: dto.toVaultId,
-      },
-    });
-
-    await this.prisma.holding.update({
-      where: {
-        userId_assetId_vaultId: {
-          userId: dto.userId,
-          assetId: dto.assetId,
-          vaultId: dto.fromVaultId,
+  async executeTeleport(userId: string, dto: CreateTeleportDto) {
+    return this.prisma.$transaction(async (tx: TxClient) => {
+      const holding = await tx.holding.findUnique({
+        where: {
+          userId_assetId_vaultId: {
+            userId,
+            assetId: dto.assetId,
+            vaultId: dto.fromVaultId,
+          },
         },
-      },
-      data: {
-        quantity: { decrement: dto.quantity },
-      },
-    });
+      });
 
-    await this.prisma.holding.upsert({
-      where: {
-        userId_assetId_vaultId: {
-          userId: dto.userId,
+      if (!holding || holding.quantity.toNumber() < dto.quantity) {
+        throw new BadRequestException(
+          'Insufficient holdings in source vault. ' +
+          `Available: ${holding?.quantity.toString() ?? '0'}, ` +
+          `Requested: ${dto.quantity}`,
+        );
+      }
+
+      const transaction = await tx.transaction.create({
+        data: {
+          userId,
+          assetId: dto.assetId,
+          type: 'TELEPORT',
+          status: 'COMPLETED',
+          quantity: dto.quantity,
+          pricePerUnit: 0,
+          totalAmount: 0,
+          fromVaultId: dto.fromVaultId,
+          toVaultId: dto.toVaultId,
+        },
+      });
+
+      await tx.holding.update({
+        where: {
+          userId_assetId_vaultId: {
+            userId,
+            assetId: dto.assetId,
+            vaultId: dto.fromVaultId,
+          },
+        },
+        data: {
+          quantity: { decrement: dto.quantity },
+        },
+      });
+
+      await tx.holding.upsert({
+        where: {
+          userId_assetId_vaultId: {
+            userId,
+            assetId: dto.assetId,
+            vaultId: dto.toVaultId,
+          },
+        },
+        update: {
+          quantity: { increment: dto.quantity },
+        },
+        create: {
+          userId,
           assetId: dto.assetId,
           vaultId: dto.toVaultId,
+          quantity: dto.quantity,
         },
-      },
-      update: {
-        quantity: { increment: dto.quantity },
-      },
-      create: {
-        userId: dto.userId,
-        assetId: dto.assetId,
-        vaultId: dto.toVaultId,
-        quantity: dto.quantity,
-      },
-    });
+      });
 
-    return transaction;
+      return transaction;
+    });
   }
 
   async getHoldings(userId: string) {

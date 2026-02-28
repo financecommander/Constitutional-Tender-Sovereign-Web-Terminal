@@ -103,6 +103,8 @@ model Holding {
   vault Vault @relation(fields: [vaultId], references: [id])
 
   @@unique([userId, assetId, vaultId])
+  @@index([userId])
+  @@index([assetId])
   @@map("holdings")
 }
 
@@ -128,5 +130,8 @@ model Transaction {
   fromVault Vault? @relation("TransactionFromVault", fields: [fromVaultId], references: [id])
   toVault   Vault? @relation("TransactionToVault", fields: [toVaultId], references: [id])
 
+  @@index([userId])
+  @@index([assetId])
+  @@index([status])
   @@map("transactions")
 }

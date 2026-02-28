@@ -1,7 +1,7 @@
 'use client';
 
 import { useAuth0 } from '@auth0/auth0-react';
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
@@ -67,38 +67,27 @@ export function useApi() {
     [getAccessTokenSilently, isAuthenticated]
   );
 
-  return {
-    /**
-     * Make a GET request to the API
-     */
-    get: (endpoint: string) => makeRequest(endpoint, { method: 'GET' }),
+  return useMemo(
+    () => ({
+      get: (endpoint: string) => makeRequest(endpoint, { method: 'GET' }),
 
-    /**
-     * Make a POST request to the API
-     */
-    post: (endpoint: string, data: any) =>
-      makeRequest(endpoint, {
-        method: 'POST',
-        body: JSON.stringify(data),
-      }),
+      post: (endpoint: string, data: Record<string, unknown>) =>
+        makeRequest(endpoint, {
+          method: 'POST',
+          body: JSON.stringify(data),
+        }),
 
-    /**
-     * Make a PUT request to the API
-     */
-    put: (endpoint: string, data: any) =>
-      makeRequest(endpoint, {
-        method: 'PUT',
-        body: JSON.stringify(data),
-      }),
+      put: (endpoint: string, data: Record<string, unknown>) =>
+        makeRequest(endpoint, {
+          method: 'PUT',
+          body: JSON.stringify(data),
+        }),
 
-    /**
-     * Make a DELETE request to the API
-     */
-    delete: (endpoint: string) => makeRequest(endpoint, { method: 'DELETE' }),
+      delete: (endpoint: string) =>
+        makeRequest(endpoint, { method: 'DELETE' }),
 
-    /**
-     * Make a custom request to the API
-     */
-    request: makeRequest,
-  };
+      request: makeRequest,
+    }),
+    [makeRequest],
+  );
 }
