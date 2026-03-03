@@ -3,7 +3,7 @@ module.exports = {
     {
       name: 'ct-api',
       cwd: '/opt/ct/apps/api',
-      script: 'dist/main.js',
+      script: 'dist/src/main.js',
       instances: 1,
       exec_mode: 'fork',
       env: {
