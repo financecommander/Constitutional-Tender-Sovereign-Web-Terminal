@@ -4,6 +4,7 @@ import { Header } from '@/components/Header';
 import { Sidebar } from '@/components/Sidebar';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { SpotTickerBar } from '@/components/SpotTickerBar';
+import { ChatBot } from '@/components/ChatBot';
 import { useSpotStream } from '@/hooks/use-spot-stream';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -23,6 +24,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <ProtectedRoute>{children}</ProtectedRoute>
         </main>
       </div>
+      <ChatBot />
     </div>
   );
 }
