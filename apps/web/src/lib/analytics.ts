@@ -33,7 +33,7 @@ export function trackEvent(name: EventName, data?: EventData) {
 
     // Fire and forget — don't block UI
     if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
-      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
       navigator.sendBeacon(
         `${API_BASE}/api/analytics/event`,
         JSON.stringify(payload),
