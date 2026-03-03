@@ -18,6 +18,7 @@ import { ReviewsModule } from './reviews/reviews.module';
 import { SavingsModule } from './savings/savings.module';
 import { PrismaService } from './prisma.service';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
+import { PermissionsGuard } from './auth/guards/permissions.guard';
 
 @Module({
   imports: [
@@ -59,6 +60,10 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: PermissionsGuard,
     },
     {
       provide: APP_GUARD,

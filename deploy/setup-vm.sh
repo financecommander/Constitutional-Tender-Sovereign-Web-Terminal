@@ -27,7 +27,15 @@ apt-get install -y postgresql-16 postgresql-client-16
 
 # --- Create DB ---
 echo "[4/8] Setting up database..."
-sudo -u postgres psql -c "CREATE USER ctuser WITH PASSWORD 'CHANGE_ME_IN_PRODUCTION';" || true
+if [ -z "${DB_PASSWORD:-}" ]; then
+  read -sp "Enter PostgreSQL password for ctuser: " DB_PASSWORD
+  echo ""
+fi
+if [ -z "$DB_PASSWORD" ]; then
+  echo "ERROR: Database password cannot be empty."
+  exit 1
+fi
+sudo -u postgres psql -c "CREATE USER ctuser WITH PASSWORD '${DB_PASSWORD}';" || true
 sudo -u postgres psql -c "CREATE DATABASE constitutional_tender OWNER ctuser;" || true
 sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE constitutional_tender TO ctuser;" || true
 
@@ -68,6 +76,6 @@ echo "  6. Build:            npx turbo run build"
 echo "  7. Start PM2:        pm2 start deploy/ecosystem.config.js"
 echo "  8. Save PM2:         pm2 save"
 echo ""
-echo "Database URL: postgresql://ctuser:CHANGE_ME_IN_PRODUCTION@localhost:5432/constitutional_tender"
+echo "Database URL: postgresql://ctuser:<YOUR_PASSWORD>@localhost:5432/constitutional_tender"
 echo ""
-echo "IMPORTANT: Change the database password in production!"
+echo "Use the password you entered above in your .env DATABASE_URL."

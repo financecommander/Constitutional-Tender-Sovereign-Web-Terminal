@@ -1,28 +1,34 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 
 /**
- * User object interface extracted from JWT
- * This interface supports future RBAC implementation
+ * User object interface extracted from JWT + DB lookup
+ * The dbUserId is resolved in the JWT strategy by looking up the user by authId.
  */
 export interface UserFromToken {
   authId: string;
   email?: string;
   permissions: string[];
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
+  dbUserId: string | null; // Resolved DB user UUID (null if user not in DB yet)
 }
 
 /**
  * CurrentUser decorator
- * 
- * Extracts the authenticated user from the request
- * The user is attached to the request by the JWT strategy after successful validation
- * 
+ *
+ * Extracts the authenticated user from the request.
+ * The user is attached to the request by the JWT strategy after successful validation.
+ *
  * @example
  * ```typescript
  * @Get('profile')
- * @UseGuards(JwtAuthGuard)
  * getProfile(@CurrentUser() user: UserFromToken) {
- *   return this.authService.getProfile(user.authId);
+ *   return this.service.doSomething(user.dbUserId);
+ * }
+ *
+ * // Or get a specific field:
+ * @Get('orders')
+ * getOrders(@CurrentUser('dbUserId') userId: string) {
+ *   return this.service.listOrders(userId);
  * }
  * ```
  */

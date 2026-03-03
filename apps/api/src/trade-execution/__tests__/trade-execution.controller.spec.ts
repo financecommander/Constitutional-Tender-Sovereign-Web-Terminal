@@ -16,6 +16,7 @@ const mockUser: UserFromToken = {
   authId: 'auth0|user1',
   email: 'test@example.com',
   permissions: ['trade:execute'],
+  dbUserId: null,
 };
 
 describe('TradeExecutionController', () => {

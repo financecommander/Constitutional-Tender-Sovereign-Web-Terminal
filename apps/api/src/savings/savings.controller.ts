@@ -1,20 +1,22 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, Req } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, UnauthorizedException } from '@nestjs/common';
 import { SavingsService } from './savings.service';
-import { Public } from '../auth/decorators/public.decorator';
+import { CurrentUser, UserFromToken } from '../auth/decorators/current-user.decorator';
 
 @Controller('api/savings')
 export class SavingsController {
   constructor(private readonly savingsService: SavingsService) {}
 
   @Get()
-  async getPlans(@Req() req: any) {
-    const userId = req.user.dbUser.id;
-    return this.savingsService.getUserPlans(userId);
+  async getPlans(@CurrentUser() user: UserFromToken) {
+    if (!user.dbUserId) {
+      throw new UnauthorizedException('User profile not found. Please complete onboarding first.');
+    }
+    return this.savingsService.getUserPlans(user.dbUserId);
   }
 
   @Post()
   async createPlan(
-    @Req() req: any,
+    @CurrentUser() user: UserFromToken,
     @Body() body: {
       sku: string;
       amountUsd: number;
@@ -23,21 +25,27 @@ export class SavingsController {
       paymentRail: 'WIRE' | 'ACH' | 'CRYPTO';
     },
   ) {
-    const userId = req.user.dbUser.id;
+    if (!user.dbUserId) {
+      throw new UnauthorizedException('User profile not found. Please complete onboarding first.');
+    }
     return this.savingsService.createPlan(
-      userId, body.sku, body.amountUsd, body.frequencyDays, body.deliveryType, body.paymentRail,
+      user.dbUserId, body.sku, body.amountUsd, body.frequencyDays, body.deliveryType, body.paymentRail,
     );
   }
 
   @Patch(':planId/toggle')
-  async togglePlan(@Req() req: any, @Param('planId') planId: string) {
-    const userId = req.user.dbUser.id;
-    return this.savingsService.togglePlan(planId, userId);
+  async togglePlan(@CurrentUser() user: UserFromToken, @Param('planId') planId: string) {
+    if (!user.dbUserId) {
+      throw new UnauthorizedException('User profile not found. Please complete onboarding first.');
+    }
+    return this.savingsService.togglePlan(planId, user.dbUserId);
   }
 
   @Delete(':planId')
-  async deletePlan(@Req() req: any, @Param('planId') planId: string) {
-    const userId = req.user.dbUser.id;
-    return this.savingsService.deletePlan(planId, userId);
+  async deletePlan(@CurrentUser() user: UserFromToken, @Param('planId') planId: string) {
+    if (!user.dbUserId) {
+      throw new UnauthorizedException('User profile not found. Please complete onboarding first.');
+    }
+    return this.savingsService.deletePlan(planId, user.dbUserId);
   }
 }

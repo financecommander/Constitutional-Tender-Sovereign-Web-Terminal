@@ -1,16 +1,19 @@
-import { Controller, Post, Get, Param, Body, Req } from '@nestjs/common';
+import { Controller, Post, Get, Param, Body, UnauthorizedException } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
+import { CurrentUser, UserFromToken } from '../auth/decorators/current-user.decorator';
 
 @Controller('api/orders')
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
   @Post()
-  async createOrder(@Req() req: any, @Body() dto: CreateOrderDto) {
-    const userId = req.user.dbUser.id;
+  async createOrder(@CurrentUser() user: UserFromToken, @Body() dto: CreateOrderDto) {
+    if (!user.dbUserId) {
+      throw new UnauthorizedException('User profile not found. Please complete onboarding first.');
+    }
     return this.ordersService.createOrder(
-      userId,
+      user.dbUserId,
       dto.quoteId,
       dto.paymentRail,
       {
@@ -25,14 +28,18 @@ export class OrdersController {
   }
 
   @Get()
-  async listOrders(@Req() req: any) {
-    const userId = req.user.dbUser.id;
-    return this.ordersService.listOrders(userId);
+  async listOrders(@CurrentUser() user: UserFromToken) {
+    if (!user.dbUserId) {
+      throw new UnauthorizedException('User profile not found. Please complete onboarding first.');
+    }
+    return this.ordersService.listOrders(user.dbUserId);
   }
 
   @Get(':orderId')
-  async getOrder(@Req() req: any, @Param('orderId') orderId: string) {
-    const userId = req.user.dbUser.id;
-    return this.ordersService.getOrder(orderId, userId);
+  async getOrder(@CurrentUser() user: UserFromToken, @Param('orderId') orderId: string) {
+    if (!user.dbUserId) {
+      throw new UnauthorizedException('User profile not found. Please complete onboarding first.');
+    }
+    return this.ordersService.getOrder(orderId, user.dbUserId);
   }
 }

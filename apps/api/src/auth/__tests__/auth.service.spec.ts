@@ -32,6 +32,7 @@ describe('AuthService', () => {
       email: 'john@example.com',
       permissions: ['trade:execute'],
       metadata: { name: 'John Doe' },
+      dbUserId: null,
     };
 
     it('should return existing user with permissions', async () => {
@@ -82,6 +83,7 @@ describe('AuthService', () => {
         authId: 'auth0|abc123',
         email: 'john@example.com',
         permissions: [],
+        dbUserId: null,
       });
 
       expect(mockPrisma.user.create).toHaveBeenCalledWith({

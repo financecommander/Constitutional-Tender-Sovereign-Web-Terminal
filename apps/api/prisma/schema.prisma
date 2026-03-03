@@ -141,9 +141,9 @@ model Holding {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  user  User  @relation(fields: [userId], references: [id])
-  asset Asset @relation(fields: [assetId], references: [id])
-  vault Vault @relation(fields: [vaultId], references: [id])
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  asset Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  vault Vault @relation(fields: [vaultId], references: [id], onDelete: Cascade)
 
   @@unique([userId, assetId, vaultId])
   @@index([userId])
@@ -168,10 +168,10 @@ model Transaction {
   createdAt       DateTime          @default(now()) @map("created_at")
   updatedAt       DateTime          @updatedAt @map("updated_at")
 
-  user      User   @relation(fields: [userId], references: [id])
-  asset     Asset  @relation(fields: [assetId], references: [id])
-  fromVault Vault? @relation("TransactionFromVault", fields: [fromVaultId], references: [id])
-  toVault   Vault? @relation("TransactionToVault", fields: [toVaultId], references: [id])
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  asset     Asset  @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  fromVault Vault? @relation("TransactionFromVault", fields: [fromVaultId], references: [id], onDelete: SetNull)
+  toVault   Vault? @relation("TransactionToVault", fields: [toVaultId], references: [id], onDelete: SetNull)
 
   @@index([userId])
   @@index([assetId])
@@ -246,8 +246,8 @@ model SupplierOffer {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  productSku ProductSku @relation(fields: [productSkuId], references: [id])
-  supplier   Supplier   @relation(fields: [supplierId], references: [id])
+  productSku ProductSku @relation(fields: [productSkuId], references: [id], onDelete: Cascade)
+  supplier   Supplier   @relation(fields: [supplierId], references: [id], onDelete: Cascade)
   quotes     Quote[]
 
   @@index([productSkuId])
@@ -271,9 +271,9 @@ model Quote {
   isUsed         Boolean      @default(false) @map("is_used")
   createdAt      DateTime     @default(now()) @map("created_at")
 
-  user       User          @relation(fields: [userId], references: [id])
-  productSku ProductSku    @relation(fields: [productSkuId], references: [id])
-  offer      SupplierOffer @relation(fields: [offerId], references: [id])
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productSku ProductSku    @relation(fields: [productSkuId], references: [id], onDelete: Cascade)
+  offer      SupplierOffer @relation(fields: [offerId], references: [id], onDelete: Cascade)
   order      Order?
 
   @@index([userId])
@@ -302,8 +302,8 @@ model Order {
   createdAt    DateTime     @default(now()) @map("created_at")
   updatedAt    DateTime     @updatedAt @map("updated_at")
 
-  quote  Quote        @relation(fields: [quoteId], references: [id])
-  user   User         @relation(fields: [userId], references: [id])
+  quote  Quote        @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  user   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   events OrderEvent[]
 
   @@index([userId])
@@ -318,7 +318,7 @@ model OrderEvent {
   note      String?
   createdAt DateTime    @default(now()) @map("created_at")
 
-  order Order @relation(fields: [orderId], references: [id])
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@index([orderId])
   @@map("order_events")
@@ -337,8 +337,8 @@ model ProductReview {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  productSku ProductSku @relation(fields: [productSkuId], references: [id])
-  user       User       @relation(fields: [userId], references: [id])
+  productSku ProductSku @relation(fields: [productSkuId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([productSkuId, userId]) // one review per product per user
   @@index([productSkuId])
@@ -363,8 +363,8 @@ model SavingsPlan {
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
-  user       User       @relation(fields: [userId], references: [id])
-  productSku ProductSku @relation(fields: [productSkuId], references: [id])
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productSku ProductSku @relation(fields: [productSkuId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([nextRunAt])

@@ -4,7 +4,7 @@ import { SpotService } from '../spot/spot.service';
 import { OrdersService } from '../orders/orders.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { KycService } from '../kyc/kyc.service';
-import { Public } from '../auth/decorators/public.decorator';
+import { RequirePermissions } from '../auth/decorators/require-permissions.decorator';
 import { Metal, OrderStatus, KycStatus } from '@prisma/client';
 
 /**
@@ -17,10 +17,10 @@ import { Metal, OrderStatus, KycStatus } from '@prisma/client';
  * - Spot price overrides
  * - System health monitoring
  *
- * TODO: Add admin role guard (currently public for demo)
+ * Requires 'admin:access' permission from Auth0 RBAC.
  */
 @Controller('api/admin')
-@Public() // TODO: Replace with admin-only guard
+@RequirePermissions('admin:access')
 export class AdminController {
   constructor(
     private readonly prisma: PrismaService,
@@ -95,7 +95,7 @@ export class AdminController {
     @Query('status') status?: OrderStatus,
     @Query('limit') limit?: string,
   ) {
-    const where: any = {};
+    const where: Record<string, unknown> = {};
     if (status) where.status = status;
 
     const orders = await this.prisma.order.findMany({
