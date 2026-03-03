@@ -15,10 +15,10 @@ const noop = (() => Promise.resolve()) as any;
  * All auth methods are no-ops, isAuthenticated=false, isLoading=false.
  */
 const mockAuth0Value = {
-  isAuthenticated: false,
+  isAuthenticated: true,
   isLoading: false,
   error: undefined,
-  user: undefined,
+  user: { email: 'demo@constitutionaltender.com', name: 'Demo User' },
   getAccessTokenSilently: noop,
   getAccessTokenWithPopup: noop,
   getIdTokenClaims: noop,
