@@ -40,10 +40,29 @@ export class ProductsService {
     private readonly spotService: SpotService,
   ) {}
 
-  async listProducts(metal?: Metal, category?: ProductCategory) {
+  async listProducts(
+    metal?: Metal,
+    category?: ProductCategory,
+    options?: { search?: string; minWeight?: number; maxWeight?: number; sort?: string },
+  ) {
     const where: any = { isActive: true };
     if (metal) where.metal = metal;
     if (category) where.category = category;
+    if (options?.search) {
+      where.name = { contains: options.search, mode: 'insensitive' };
+    }
+    if (options?.minWeight) {
+      where.weightOz = { ...(where.weightOz || {}), gte: options.minWeight };
+    }
+    if (options?.maxWeight) {
+      where.weightOz = { ...(where.weightOz || {}), lte: options.maxWeight };
+    }
+
+    // Sorting
+    let orderBy: any[] = [{ metal: 'asc' }, { weightOz: 'asc' }];
+    if (options?.sort === 'name') orderBy = [{ name: 'asc' }];
+    else if (options?.sort === 'weight') orderBy = [{ weightOz: 'asc' }];
+    else if (options?.sort === 'weight_desc') orderBy = [{ weightOz: 'desc' }];
 
     const products = await this.prisma.productSku.findMany({
       where,

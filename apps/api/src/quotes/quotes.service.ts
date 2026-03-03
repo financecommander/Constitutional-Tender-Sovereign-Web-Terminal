@@ -3,9 +3,16 @@ import { PrismaService } from '../prisma.service';
 import { SpotService } from '../spot/spot.service';
 import { DeliveryType } from '@prisma/client';
 
-const QUOTE_TTL_MS = 30_000; // 30 seconds
+const QUOTE_TTL_MS = 5 * 60_000; // 5 minutes (industry standard: 3-10 min)
 const SPREAD_USD_PER_OZ = 2.00; // platform spread
 const SHIPPING_FLAT_USD = 15.00; // flat shipping fee
+
+// Payment-method pricing: wire/ACH gets 4% discount (industry standard)
+const PAYMENT_DISCOUNT: Record<string, number> = {
+  WIRE: 0.04, // 4% off
+  ACH: 0.04,  // 4% off
+  CRYPTO: 0,  // no discount
+};
 
 @Injectable()
 export class QuotesService {
@@ -76,6 +83,14 @@ export class QuotesService {
       },
     });
 
+    // Calculate payment-method pricing
+    const baseTotal = quote.totalUsd.toNumber();
+    const paymentPricing = {
+      WIRE: Math.round((baseTotal * (1 - PAYMENT_DISCOUNT.WIRE)) * 100) / 100,
+      ACH: Math.round((baseTotal * (1 - PAYMENT_DISCOUNT.ACH)) * 100) / 100,
+      CRYPTO: baseTotal,
+    };
+
     return {
       id: quote.id,
       sku: product.sku,
@@ -87,7 +102,8 @@ export class QuotesService {
       lockedPremiumUsd: premiumUsd,
       lockedSpreadUsd: spreadUsd,
       lockedShippingUsd: shippingUsd,
-      totalUsd: quote.totalUsd.toNumber(),
+      totalUsd: baseTotal,
+      paymentPricing,
       deliveryType: quote.deliveryType,
       supplierName: quote.offer.supplier.name,
       shipEtaDays: quote.offer.shipEtaDays,

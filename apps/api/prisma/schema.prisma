@@ -89,6 +89,8 @@ model User {
   transactions Transaction[]
   quotes       Quote[]
   orders       Order[]
+  reviews      ProductReview[]
+  savingsPlans SavingsPlan[]
 
   @@map("users")
 }
@@ -208,8 +210,10 @@ model ProductSku {
   createdAt            DateTime        @default(now()) @map("created_at")
   updatedAt            DateTime        @updatedAt @map("updated_at")
 
-  offers SupplierOffer[]
-  quotes Quote[]
+  offers       SupplierOffer[]
+  quotes       Quote[]
+  reviews      ProductReview[]
+  savingsPlans SavingsPlan[]
 
   @@index([metal])
   @@map("product_skus")
@@ -318,4 +322,51 @@ model OrderEvent {
 
   @@index([orderId])
   @@map("order_events")
+}
+
+// ── Reviews ─────────────────────────────────────────────────
+
+model ProductReview {
+  id           String   @id @default(uuid())
+  productSkuId String   @map("product_sku_id")
+  userId       String   @map("user_id")
+  rating       Int      // 1-5 stars
+  title        String?
+  body         String?
+  isVerified   Boolean  @default(false) @map("is_verified") // verified purchase
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  productSku ProductSku @relation(fields: [productSkuId], references: [id])
+  user       User       @relation(fields: [userId], references: [id])
+
+  @@unique([productSkuId, userId]) // one review per product per user
+  @@index([productSkuId])
+  @@map("product_reviews")
+}
+
+// ── Savings Plans (DCA) ─────────────────────────────────────
+
+model SavingsPlan {
+  id             String   @id @default(uuid())
+  userId         String   @map("user_id")
+  productSkuId   String   @map("product_sku_id")
+  amountUsd      Decimal  @map("amount_usd")
+  frequencyDays  Int      @default(30) @map("frequency_days") // 7=weekly, 14=biweekly, 30=monthly
+  deliveryType   DeliveryType @map("delivery_type")
+  paymentRail    PaymentRail  @map("payment_rail")
+  isActive       Boolean  @default(true) @map("is_active")
+  nextRunAt      DateTime @map("next_run_at")
+  totalInvested  Decimal  @default(0) @map("total_invested")
+  totalOzBought  Decimal  @default(0) @map("total_oz_bought")
+  executionCount Int      @default(0) @map("execution_count")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  user       User       @relation(fields: [userId], references: [id])
+  productSku ProductSku @relation(fields: [productSkuId], references: [id])
+
+  @@index([userId])
+  @@index([nextRunAt])
+  @@map("savings_plans")
 }

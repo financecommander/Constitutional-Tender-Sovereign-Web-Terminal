@@ -14,6 +14,8 @@ import { PaymentsModule } from './payments/payments.module';
 import { SuppliersModule } from './suppliers/suppliers.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { AdminModule } from './admin/admin.module';
+import { ReviewsModule } from './reviews/reviews.module';
+import { SavingsModule } from './savings/savings.module';
 import { PrismaService } from './prisma.service';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 
@@ -49,6 +51,8 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
     SuppliersModule,
     NotificationsModule,
     AdminModule,
+    ReviewsModule,
+    SavingsModule,
   ],
   providers: [
     PrismaService,

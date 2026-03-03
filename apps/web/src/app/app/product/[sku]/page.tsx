@@ -4,9 +4,11 @@ import { useParams } from 'next/navigation';
 import { useState } from 'react';
 import { useProductDetail, OfferDetail } from '@/hooks/use-products';
 import { useSpotStream } from '@/hooks/use-spot-stream';
+import { useCart } from '@/hooks/use-cart';
 import { MetalTile } from '@/components/MetalTile';
 import { SupplierOfferList } from '@/components/SupplierOfferList';
 import { QuoteLockPanel } from '@/components/QuoteLockPanel';
+import { ProductReviews } from '@/components/ProductReviews';
 import Link from 'next/link';
 
 const METAL_LABELS: Record<string, string> = {
@@ -23,6 +25,7 @@ export default function ProductDetailPage() {
   const { spots, connectionStatus } = useSpotStream();
   const [selectedOffer, setSelectedOffer] = useState<OfferDetail | null>(null);
   const [quantity, setQuantity] = useState(1);
+  const { addItem } = useCart();
 
   if (isLoading) {
     return (
@@ -199,6 +202,23 @@ export default function ProductDetailPage() {
             </div>
           )}
 
+          {/* Add to Cart */}
+          {activeOffer && unitTotal !== null && (
+            <button
+              onClick={() => addItem({
+                sku: product.sku,
+                name: product.name,
+                metal: product.metal,
+                weightOz: product.weightOz,
+                quantity,
+                bestOfferTotalUsd: unitTotal,
+              })}
+              className="w-full py-3 bg-gold-500 hover:bg-gold-600 text-navy-900 font-bold text-sm rounded-lg transition-colors"
+            >
+              Add to Cart — ${orderTotal?.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+            </button>
+          )}
+
           {/* Quote Lock Panel */}
           {activeOffer ? (
             <QuoteLockPanel
@@ -215,8 +235,33 @@ export default function ProductDetailPage() {
               </p>
             </div>
           )}
+
+          {/* Trust Signals */}
+          <div className="bg-navy-800/50 border border-navy-700/50 rounded-lg p-4 space-y-2">
+            <div className="flex items-center gap-2 text-xs text-navy-400">
+              <svg className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+              <span>Fully insured shipping</span>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-navy-400">
+              <svg className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+              <span>Secure checkout with price lock</span>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-navy-400">
+              <svg className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              <span>Save 4% with Wire/ACH payment</span>
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* Reviews Section */}
+      <ProductReviews sku={product.sku} />
     </div>
   );
 }

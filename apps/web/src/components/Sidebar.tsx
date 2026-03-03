@@ -6,6 +6,8 @@ const navItems = [
   { label: 'Dashboard', href: '/app', icon: '◈' },
   { label: 'Market', href: '/app/market', icon: '◇' },
   { label: 'Orders', href: '/app/orders', icon: '☰' },
+  { label: 'Savings Plans', href: '/app/savings', icon: '↻' },
+  { label: 'Learn', href: '/app/learn', icon: '📖' },
   { label: 'Profile', href: '/app/profile', icon: '⊕' },
   { label: 'Settings', href: '/app/settings', icon: '⚙' },
   { label: 'Admin', href: '/app/admin', icon: '⊞' },
@@ -33,7 +35,7 @@ export function Sidebar() {
       <div className="p-4 border-t border-navy-700/50">
         <div className="text-xs text-navy-500">
           <p>Constitutional Tender</p>
-          <p className="mt-1">v0.2.0</p>
+          <p className="mt-1">v0.3.0</p>
         </div>
       </div>
     </aside>
