@@ -104,3 +104,128 @@ export interface CreateTeleportRequest {
   toVaultId: string;
   quantity: number;
 }
+
+// --- v2 Types ---
+
+export type Metal = 'XAU' | 'XAG' | 'XPT' | 'XPD';
+export type ProductCategory = 'COIN' | 'BAR' | 'ROUND';
+export type DeliveryType = 'DIRECT_SHIP' | 'VAULT_ALLOCATE';
+export type PaymentRail = 'WIRE' | 'ACH' | 'CRYPTO';
+export type OrderStatus =
+  | 'PRICE_LOCKED'
+  | 'FUNDS_CONFIRMED'
+  | 'SUPPLIER_CONFIRMED'
+  | 'SHIPMENT_CREATED'
+  | 'IN_TRANSIT'
+  | 'DELIVERED'
+  | 'VAULT_ALLOCATED'
+  | 'CANCELLED';
+
+export interface MetalSpot {
+  metal: Metal;
+  spotUsdPerOz: number;
+  changePct24h: number;
+  asOf: string;
+  source: string;
+}
+
+export interface SpotStatus {
+  lastUpdate: string;
+  isStale: boolean;
+  staleThresholdMs: number;
+}
+
+export interface SpotStreamEvent {
+  type: 'spot.update' | 'system.status';
+  payload: {
+    spots?: MetalSpot[];
+    status?: SpotStatus & { status?: string };
+  };
+}
+
+export interface ProductSku {
+  id: string;
+  sku: string;
+  metal: Metal;
+  name: string;
+  weightOz: string;
+  purity: string;
+  category: ProductCategory;
+  images: string[];
+  eligibleDeliveryTypes: DeliveryType[];
+  flags: string[];
+  isActive: boolean;
+}
+
+export interface Supplier {
+  id: string;
+  name: string;
+  contactEmail: string;
+  website: string | null;
+  isActive: boolean;
+}
+
+export interface SupplierOffer {
+  id: string;
+  productSkuId: string;
+  supplierId: string;
+  availableQty: number;
+  shipEtaDays: number;
+  shipOrigin: string;
+  premiumUsd: string;
+  constraints: string[];
+  isActive: boolean;
+  productSku?: ProductSku;
+  supplier?: Supplier;
+}
+
+export interface Quote {
+  id: string;
+  userId: string;
+  productSkuId: string;
+  offerId: string;
+  quantity: number;
+  lockedSpotUsd: string;
+  lockedPremiumUsd: string;
+  lockedSpreadUsd: string;
+  lockedShippingUsd: string;
+  totalUsd: string;
+  deliveryType: DeliveryType;
+  expiresAt: string;
+  isUsed: boolean;
+  createdAt: string;
+  productSku?: ProductSku;
+  offer?: SupplierOffer;
+}
+
+export interface Order {
+  id: string;
+  quoteId: string;
+  userId: string;
+  status: OrderStatus;
+  deliveryType: DeliveryType;
+  paymentRail: PaymentRail;
+  shippingName: string | null;
+  shippingAddress: string | null;
+  shippingCity: string | null;
+  shippingState: string | null;
+  shippingZip: string | null;
+  shippingCountry: string | null;
+  receiptSpotUsd: string;
+  receiptPremiumUsd: string;
+  receiptSpreadUsd: string;
+  receiptShippingUsd: string;
+  receiptTotalUsd: string;
+  createdAt: string;
+  updatedAt: string;
+  quote?: Quote;
+  events?: OrderEvent[];
+}
+
+export interface OrderEvent {
+  id: string;
+  orderId: string;
+  stage: OrderStatus;
+  note: string | null;
+  createdAt: string;
+}

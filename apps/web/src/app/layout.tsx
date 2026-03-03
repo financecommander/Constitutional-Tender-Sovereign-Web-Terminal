@@ -1,15 +1,12 @@
 import type { Metadata } from 'next';
 import './globals.css';
-import { Header } from '@/components/Header';
-import { Sidebar } from '@/components/Sidebar';
 import { Auth0ProviderWrapper } from '@/providers/auth0-provider';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
-import { ProtectedRoute } from '@/components/ProtectedRoute';
 
 export const metadata: Metadata = {
-  title: 'Constitutional Tender | Sovereign Web Terminal',
+  title: 'Constitutional Tender | Lawful Money. Modern Execution.',
   description:
-    'Institutional-grade trading terminal for allocated gold and silver across international vaults.',
+    'Live pricing, transparent spreads, and auditable receipts for gold and silver ownership.',
 };
 
 export default function RootLayout({
@@ -19,16 +16,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="min-h-screen bg-navy-50">
+      <body className="min-h-screen bg-navy-900 text-navy-100">
         <ErrorBoundary>
           <Auth0ProviderWrapper>
-            <Header />
-            <div className="flex">
-              <Sidebar />
-              <main className="flex-1 p-6">
-                <ProtectedRoute>{children}</ProtectedRoute>
-              </main>
-            </div>
+            {children}
           </Auth0ProviderWrapper>
         </ErrorBoundary>
       </body>

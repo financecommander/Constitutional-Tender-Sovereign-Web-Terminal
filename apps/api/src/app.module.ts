@@ -4,6 +4,11 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { AuthModule } from './auth/auth.module';
 import { MarketDataModule } from './market-data/market-data.module';
 import { TradeExecutionModule } from './trade-execution/trade-execution.module';
+import { SpotModule } from './spot/spot.module';
+import { ProductsModule } from './products/products.module';
+import { QuotesModule } from './quotes/quotes.module';
+import { OrdersModule } from './orders/orders.module';
+import { KycModule } from './kyc/kyc.module';
 import { PrismaService } from './prisma.service';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 
@@ -29,6 +34,11 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
     AuthModule,
     MarketDataModule,
     TradeExecutionModule,
+    SpotModule,
+    ProductsModule,
+    QuotesModule,
+    OrdersModule,
+    KycModule,
   ],
   providers: [
     PrismaService,

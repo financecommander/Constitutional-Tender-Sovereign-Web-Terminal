@@ -3,10 +3,10 @@
 import type { Transaction } from '@/types/api';
 
 const TYPE_STYLES: Record<string, string> = {
-  BUY: 'bg-green-100 text-green-800',
-  SELL: 'bg-red-100 text-red-800',
-  TELEPORT: 'bg-blue-100 text-blue-800',
-  WITHDRAWAL: 'bg-orange-100 text-orange-800',
+  BUY: 'bg-green-900/30 text-green-400',
+  SELL: 'bg-red-900/30 text-red-400',
+  TELEPORT: 'bg-blue-900/30 text-blue-400',
+  WITHDRAWAL: 'bg-orange-900/30 text-orange-400',
 };
 
 interface TransactionRowProps {
@@ -19,17 +19,17 @@ export function TransactionRow({ transaction }: TransactionRowProps) {
   const date = new Date(transaction.createdAt);
 
   return (
-    <div className="flex items-center justify-between py-3 border-b border-navy-100 last:border-b-0">
+    <div className="flex items-center justify-between py-3 border-b border-navy-700 last:border-b-0">
       <div className="flex items-center space-x-3">
         <span
           className={`text-xs font-semibold px-2 py-1 rounded ${
-            TYPE_STYLES[transaction.type] || 'bg-navy-100 text-navy-800'
+            TYPE_STYLES[transaction.type] || 'bg-navy-700 text-navy-300'
           }`}
         >
           {transaction.type}
         </span>
         <div>
-          <p className="text-sm font-medium text-navy-800">
+          <p className="text-sm font-medium text-white">
             {transaction.asset.name}
           </p>
           <p className="text-xs text-navy-400">
@@ -38,12 +38,12 @@ export function TransactionRow({ transaction }: TransactionRowProps) {
         </div>
       </div>
       <div className="text-right">
-        <p className="text-sm font-medium text-navy-800">
+        <p className="text-sm font-medium text-white">
           {amount > 0
             ? amount.toLocaleString('en-US', { style: 'currency', currency: transaction.currency })
             : '—'}
         </p>
-        <p className="text-xs text-navy-400">
+        <p className="text-xs text-navy-500">
           {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
         </p>
       </div>

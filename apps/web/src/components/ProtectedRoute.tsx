@@ -24,11 +24,11 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   if (!isAuthenticated) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="bg-white rounded-lg shadow-sm border border-navy-100 p-8 max-w-md text-center">
-          <h2 className="text-xl font-bold text-navy-900 mb-2">
+        <div className="bg-navy-800 rounded-lg border border-navy-700 p-8 max-w-md text-center">
+          <h2 className="text-xl font-bold text-white mb-2">
             Authentication Required
           </h2>
-          <p className="text-sm text-navy-500 mb-4">
+          <p className="text-sm text-navy-400 mb-4">
             Please log in to access this page.
           </p>
           <button
