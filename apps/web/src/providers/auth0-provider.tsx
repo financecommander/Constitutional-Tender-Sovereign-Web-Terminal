@@ -1,45 +1,84 @@
 'use client';
 
-import { Auth0Provider } from '@auth0/auth0-react';
+import { Auth0Provider, Auth0Context } from '@auth0/auth0-react';
 import { ReactNode } from 'react';
 
 interface Auth0ProviderWrapperProps {
   children: ReactNode;
 }
 
+// No-op async function — safe replacement for Auth0's stubs that throw
+const noop = (() => Promise.resolve()) as any;
+
+/**
+ * Safe mock values for Auth0Context when env vars are not configured.
+ * All auth methods are no-ops, isAuthenticated=false, isLoading=false.
+ */
+const mockAuth0Value = {
+  isAuthenticated: false,
+  isLoading: false,
+  error: undefined,
+  user: undefined,
+  getAccessTokenSilently: noop,
+  getAccessTokenWithPopup: noop,
+  getIdTokenClaims: noop,
+  loginWithCustomTokenExchange: noop,
+  exchangeToken: noop,
+  loginWithRedirect: noop,
+  loginWithPopup: noop,
+  connectAccountWithRedirect: noop,
+  logout: noop,
+  handleRedirectCallback: noop,
+  getDpopNonce: noop,
+  setDpopNonce: noop,
+  generateDpopProof: noop,
+  createFetcher: noop,
+  getConfiguration: noop,
+  mfa: {
+    getAuthenticators: noop,
+    enroll: noop,
+    challenge: noop,
+    verify: noop,
+    getEnrollmentFactors: noop,
+  },
+};
+
 /**
  * Auth0 Provider Wrapper for Next.js App Router
- * 
- * Wraps the application with Auth0Provider to enable authentication
- * throughout the app. Uses client-side authentication with Auth0 React SDK.
- * 
- * Environment variables required:
- * - NEXT_PUBLIC_AUTH0_DOMAIN: Your Auth0 domain (e.g., your-domain.auth0.com)
- * - NEXT_PUBLIC_AUTH0_CLIENT_ID: Your Auth0 application client ID
- * - NEXT_PUBLIC_AUTH0_AUDIENCE: Your API identifier/audience
+ *
+ * When Auth0 env vars are configured → wraps children with real Auth0Provider.
+ * When missing → provides Auth0Context directly with safe mock values so that
+ * useAuth0() from @auth0/auth0-react returns { isAuthenticated: false, isLoading: false }
+ * and all public pages render without errors.
+ *
+ * Environment variables required for real auth:
+ * - NEXT_PUBLIC_AUTH0_DOMAIN
+ * - NEXT_PUBLIC_AUTH0_CLIENT_ID
+ * - NEXT_PUBLIC_AUTH0_AUDIENCE
  */
 export function Auth0ProviderWrapper({ children }: Auth0ProviderWrapperProps) {
   const domain = process.env.NEXT_PUBLIC_AUTH0_DOMAIN;
   const clientId = process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID;
   const audience = process.env.NEXT_PUBLIC_AUTH0_AUDIENCE;
 
-  // Use placeholder values if env vars are missing — Auth0 SDK won't crash,
-  // auth will just silently fail, and isAuthenticated stays false.
-  const safeDomain = domain || 'placeholder.us.auth0.com';
-  const safeClientId = clientId || 'placeholder';
-  const safeAudience = audience || 'https://placeholder';
-
+  // When Auth0 is not configured, provide the REAL Auth0Context with mock values.
+  // This way useAuth0() reads our safe mock values (no-ops) instead of the
+  // default stubs which throw "You forgot to wrap your component in <Auth0Provider>".
   if (!domain || !clientId || !audience) {
-    console.warn('Auth0 environment variables are missing. Auth is disabled — public pages will render normally.');
+    return (
+      <Auth0Context.Provider value={mockAuth0Value as any}>
+        {children}
+      </Auth0Context.Provider>
+    );
   }
 
   return (
     <Auth0Provider
-      domain={safeDomain}
-      clientId={safeClientId}
+      domain={domain}
+      clientId={clientId}
       authorizationParams={{
         redirect_uri: typeof window !== 'undefined' ? window.location.origin : '',
-        audience: safeAudience,
+        audience: audience,
         scope: 'openid profile email read:trades write:trades read:holdings',
       }}
       useRefreshTokens={true}
