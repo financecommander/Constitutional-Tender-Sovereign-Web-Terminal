@@ -23,26 +23,23 @@ export function Auth0ProviderWrapper({ children }: Auth0ProviderWrapperProps) {
   const clientId = process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID;
   const audience = process.env.NEXT_PUBLIC_AUTH0_AUDIENCE;
 
-  // Validate required environment variables
+  // Use placeholder values if env vars are missing — Auth0 SDK won't crash,
+  // auth will just silently fail, and isAuthenticated stays false.
+  const safeDomain = domain || 'placeholder.us.auth0.com';
+  const safeClientId = clientId || 'placeholder';
+  const safeAudience = audience || 'https://placeholder';
+
   if (!domain || !clientId || !audience) {
-    console.error('Auth0 environment variables are missing:', {
-      domain: !!domain,
-      clientId: !!clientId,
-      audience: !!audience,
-    });
-    return <div className="p-4 bg-red-100 text-red-900">
-      Auth0 configuration is missing. Please set NEXT_PUBLIC_AUTH0_DOMAIN, 
-      NEXT_PUBLIC_AUTH0_CLIENT_ID, and NEXT_PUBLIC_AUTH0_AUDIENCE environment variables.
-    </div>;
+    console.warn('Auth0 environment variables are missing. Auth is disabled — public pages will render normally.');
   }
 
   return (
     <Auth0Provider
-      domain={domain}
-      clientId={clientId}
+      domain={safeDomain}
+      clientId={safeClientId}
       authorizationParams={{
         redirect_uri: typeof window !== 'undefined' ? window.location.origin : '',
-        audience: audience,
+        audience: safeAudience,
         scope: 'openid profile email read:trades write:trades read:holdings',
       }}
       useRefreshTokens={true}
