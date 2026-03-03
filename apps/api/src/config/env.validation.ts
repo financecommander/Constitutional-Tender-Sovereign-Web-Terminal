@@ -5,6 +5,12 @@ export interface EnvConfig {
   PORT: number;
   NODE_ENV: string;
   FRONTEND_URL: string;
+
+  // Optional integration keys
+  METALS_API_KEY: string;
+  STRIPE_SECRET_KEY: string;
+  KYC_PROVIDER: string;
+  EMAIL_PROVIDER: string;
 }
 
 const REQUIRED_VARS = [
@@ -36,5 +42,11 @@ export function validateEnv(): EnvConfig {
     PORT: parseInt(process.env.PORT || '4000', 10),
     NODE_ENV: process.env.NODE_ENV || 'development',
     FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:3000',
+
+    // Optional — gracefully fall back to demo mode if not set
+    METALS_API_KEY: process.env.METALS_API_KEY || '',
+    STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || '',
+    KYC_PROVIDER: process.env.KYC_PROVIDER || 'demo',
+    EMAIL_PROVIDER: process.env.EMAIL_PROVIDER || 'console',
   };
 }

@@ -8,6 +8,7 @@ const navItems = [
   { label: 'Orders', href: '/app/orders', icon: '☰' },
   { label: 'Profile', href: '/app/profile', icon: '⊕' },
   { label: 'Settings', href: '/app/settings', icon: '⚙' },
+  { label: 'Admin', href: '/app/admin', icon: '⊞' },
 ];
 
 export function Sidebar() {
