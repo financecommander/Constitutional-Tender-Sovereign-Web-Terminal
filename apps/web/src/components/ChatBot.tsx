@@ -192,8 +192,13 @@ export function ChatBot() {
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-navy-700 bg-navy-900 rounded-t-xl">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-gold-500 flex items-center justify-center">
-                <span className="text-navy-900 font-bold text-sm">CT</span>
+              <div className="relative w-9 h-7 flex items-center justify-center">
+                <div className="w-full h-full rounded-sm flex items-center justify-center" style={{
+                  background: 'linear-gradient(145deg, #d4a438, #b8860b 30%, #daa520 50%, #b8860b 70%, #996515)',
+                  boxShadow: 'inset 0 1px 2px rgba(255,215,0,0.4), inset 0 -1px 2px rgba(0,0,0,0.3)',
+                }}>
+                  <span className="font-bold text-sm" style={{ color: '#3a2800' }}>C</span>
+                </div>
               </div>
               <div>
                 <h3 className="text-sm font-bold text-white">CT Assistant</h3>

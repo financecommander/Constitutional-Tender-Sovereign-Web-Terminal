@@ -10,8 +10,23 @@ export function Header() {
     <header className="bg-navy-900 text-white border-b border-navy-700/50">
       <div className="flex items-center justify-between px-6 py-4">
         <Link href="/app" className="flex items-center space-x-3">
-          <div className="w-8 h-8 rounded-full bg-gold-500 flex items-center justify-center">
-            <span className="text-navy-900 font-bold text-sm">CT</span>
+          {/* Gold brick logo with "C" */}
+          <div className="relative w-9 h-7 flex items-center justify-center" style={{ perspective: '200px' }}>
+            <div
+              className="w-full h-full rounded-sm flex items-center justify-center"
+              style={{
+                background: 'linear-gradient(145deg, #d4a438, #b8860b 30%, #daa520 50%, #b8860b 70%, #996515)',
+                boxShadow: 'inset 0 1px 2px rgba(255,215,0,0.4), inset 0 -1px 2px rgba(0,0,0,0.3), 0 2px 4px rgba(0,0,0,0.4)',
+                border: '1px solid rgba(218,165,32,0.6)',
+              }}
+            >
+              <span className="font-bold text-base" style={{ color: '#3a2800', textShadow: '0 1px 0 rgba(255,215,0,0.3)' }}>C</span>
+            </div>
+            {/* Subtle beveled edge marks like a real gold bar */}
+            <div className="absolute top-0 left-0 w-full h-full rounded-sm pointer-events-none" style={{
+              borderTop: '1px solid rgba(255,223,100,0.35)',
+              borderLeft: '1px solid rgba(255,223,100,0.2)',
+            }} />
           </div>
           <div>
             <h1 className="text-lg font-bold tracking-wide">

@@ -31,6 +31,8 @@ export class SpotFeedService implements OnModuleInit {
   private simulatedPrices: Record<string, { price: number; prevClose: number }> = {
     XAU: { price: 2920.50, prevClose: 2908.75 },
     XAG: { price: 32.45, prevClose: 32.18 },
+    XPT: { price: 982.30, prevClose: 978.50 },
+    XPD: { price: 958.75, prevClose: 962.40 },
   };
 
   constructor(private readonly spotService: SpotService) {}
@@ -65,7 +67,7 @@ export class SpotFeedService implements OnModuleInit {
    */
   private async fetchFromApi() {
     try {
-      const url = `${this.apiUrl}/latest?access_key=${this.apiKey}&base=USD&symbols=XAU,XAG`;
+      const url = `${this.apiUrl}/latest?access_key=${this.apiKey}&base=USD&symbols=XAU,XAG,XPT,XPD`;
 
       const response = await fetch(url);
       if (!response.ok) {
@@ -85,6 +87,8 @@ export class SpotFeedService implements OnModuleInit {
       const metals: { metal: Metal; symbol: string }[] = [
         { metal: 'XAU', symbol: 'XAU' },
         { metal: 'XAG', symbol: 'XAG' },
+        { metal: 'XPT', symbol: 'XPT' },
+        { metal: 'XPD', symbol: 'XPD' },
       ];
 
       for (const { metal, symbol } of metals) {
@@ -111,14 +115,16 @@ export class SpotFeedService implements OnModuleInit {
    * Uses Brownian motion with mean reversion
    */
   private async simulatePrices() {
-    const metals: Metal[] = ['XAU', 'XAG'];
+    const metals: Metal[] = ['XAU', 'XAG', 'XPT', 'XPD'];
 
     for (const metal of metals) {
       const sim = this.simulatedPrices[metal];
       if (!sim) continue;
 
       // Brownian motion with mean reversion
-      const volatility = metal === 'XAU' ? 0.0003 : 0.0008; // Gold less volatile than silver
+      // Volatility by metal: Gold < Platinum < Palladium < Silver
+      const volatilityMap: Record<string, number> = { XAU: 0.0003, XAG: 0.0008, XPT: 0.0005, XPD: 0.0006 };
+      const volatility = volatilityMap[metal] || 0.0005;
       const meanReversion = 0.001;
       const drift = (sim.prevClose - sim.price) * meanReversion;
       const randomShock = (Math.random() - 0.5) * 2 * volatility * sim.price;
@@ -133,7 +139,7 @@ export class SpotFeedService implements OnModuleInit {
     }
 
     this.logger.debug(
-      `Simulated: XAU=$${this.simulatedPrices.XAU.price} XAG=$${this.simulatedPrices.XAG.price}`,
+      `Simulated: XAU=$${this.simulatedPrices.XAU.price} XAG=$${this.simulatedPrices.XAG.price} XPT=$${this.simulatedPrices.XPT.price} XPD=$${this.simulatedPrices.XPD.price}`,
     );
   }
 }

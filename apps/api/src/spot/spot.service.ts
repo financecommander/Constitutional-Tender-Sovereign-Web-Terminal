@@ -18,7 +18,7 @@ export class SpotService {
   constructor(private readonly prisma: PrismaService) {}
 
   async getLatestSpots(): Promise<SpotPrice[]> {
-    const metals: Metal[] = ['XAU', 'XAG'];
+    const metals: Metal[] = ['XAU', 'XAG', 'XPT', 'XPD'];
 
     const spots = await Promise.all(
       metals.map(async (metal) => {
