@@ -1,45 +1,30 @@
-import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
+import { OrdersService } from '../orders/orders.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { PaymentRail } from '@prisma/client';
-
-/**
- * Payments Service
- *
- * Handles payment processing for orders. Currently supports:
- * - WIRE: Wire transfer (manual confirmation)
- * - ACH: ACH bank transfer (manual confirmation)
- * - CRYPTO: Cryptocurrency (placeholder for BTCPay/Coinbase Commerce)
- *
- * To integrate Stripe:
- * 1. npm install stripe
- * 2. Set STRIPE_SECRET_KEY in .env
- * 3. Set STRIPE_WEBHOOK_SECRET in .env
- * 4. Uncomment Stripe integration methods below
- */
-
-export interface PaymentIntent {
-  id: string;
-  orderId: string;
-  rail: PaymentRail;
-  amountUsd: number;
-  status: 'pending' | 'processing' | 'completed' | 'failed';
-  instructions: Record<string, string>;
-  externalId?: string;
-  createdAt: string;
-}
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const StripeLib = require('stripe');
 
 @Injectable()
 export class PaymentsService {
   private readonly logger = new Logger(PaymentsService.name);
+  private readonly stripe: any;
+  private readonly stripeWebhookSecret: string;
 
-  private readonly stripeKey = process.env.STRIPE_SECRET_KEY || '';
-  private readonly stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET || '';
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly ordersService: OrdersService,
+    private readonly notificationsService: NotificationsService,
+  ) {
+    const stripeKey = process.env.STRIPE_SECRET_KEY || '';
+    this.stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET || '';
 
-  // In-memory payment intents (production: use database table)
-  private paymentIntents: Map<string, PaymentIntent> = new Map();
-
-  constructor(private readonly prisma: PrismaService) {
-    if (!this.stripeKey) {
+    if (stripeKey) {
+      this.stripe = new StripeLib(stripeKey);
+      this.logger.log('Stripe payment processing enabled');
+    } else {
+      this.stripe = null;
       this.logger.warn('STRIPE_SECRET_KEY not set — payments will use demo mode');
     }
   }
@@ -47,70 +32,84 @@ export class PaymentsService {
   /**
    * Create a payment intent for an order
    */
-  async createPaymentIntent(orderId: string, amountUsd: number, rail: PaymentRail): Promise<PaymentIntent> {
-    const intentId = `pi_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  async createPaymentIntent(orderId: string, amountUsd: number, rail: PaymentRail) {
+    // Check if payment already exists for this order
+    const existing = await this.prisma.paymentRecord.findUnique({
+      where: { orderId },
+    });
+    if (existing) {
+      return this.formatPaymentResponse(existing);
+    }
 
-    const intent: PaymentIntent = {
-      id: intentId,
-      orderId,
-      rail,
-      amountUsd,
-      status: 'pending',
-      instructions: this.getPaymentInstructions(rail, amountUsd, orderId),
-      createdAt: new Date().toISOString(),
-    };
+    let externalId: string | null = null;
+    let clientSecret: string | null = null;
 
-    // If Stripe is configured and rail is WIRE/ACH, create a Stripe PaymentIntent
-    // if (this.stripeKey && (rail === 'WIRE' || rail === 'ACH')) {
-    //   const stripe = require('stripe')(this.stripeKey);
-    //   const stripeIntent = await stripe.paymentIntents.create({
-    //     amount: Math.round(amountUsd * 100), // cents
-    //     currency: 'usd',
-    //     metadata: { orderId, rail },
-    //     payment_method_types: rail === 'WIRE' ? ['us_bank_account'] : ['us_bank_account'],
-    //   });
-    //   intent.externalId = stripeIntent.id;
-    //   intent.instructions.stripeClientSecret = stripeIntent.client_secret;
-    // }
+    // Create Stripe PaymentIntent if Stripe is configured
+    if (this.stripe && rail !== 'CRYPTO') {
+      const stripeIntent = await this.stripe.paymentIntents.create({
+        amount: Math.round(amountUsd * 100), // cents
+        currency: 'usd',
+        metadata: { orderId, rail },
+        payment_method_types: ['card', 'us_bank_account'],
+      });
+      externalId = stripeIntent.id;
+      clientSecret = stripeIntent.client_secret;
+    }
 
-    this.paymentIntents.set(intentId, intent);
-    this.logger.log(`Payment intent created: ${intentId} for order ${orderId} ($${amountUsd} via ${rail})`);
+    // Persist to database
+    const record = await this.prisma.paymentRecord.create({
+      data: {
+        orderId,
+        externalId,
+        rail,
+        amountUsd,
+        status: 'pending',
+      },
+    });
 
-    return intent;
+    const response = this.formatPaymentResponse(record);
+    if (clientSecret) {
+      response.stripeClientSecret = clientSecret;
+    }
+    response.instructions = this.getPaymentInstructions(rail, amountUsd, orderId);
+
+    this.logger.log(`Payment intent created: ${record.id} for order ${orderId} ($${amountUsd} via ${rail})`);
+    return response;
   }
 
   /**
    * Get payment instructions based on rail type
    */
   private getPaymentInstructions(rail: PaymentRail, amountUsd: number, orderId: string): Record<string, string> {
+    if (this.stripe && rail !== 'CRYPTO') {
+      return {
+        method: rail === 'WIRE' ? 'Bank Wire via Stripe' : 'ACH via Stripe',
+        note: 'Complete payment using the secure payment form below.',
+        amount: `$${amountUsd.toFixed(2)} USD`,
+      };
+    }
+
     switch (rail) {
       case 'WIRE':
         return {
           method: 'Wire Transfer',
-          bankName: 'Constitutional Tender Trust Bank',
-          routingNumber: 'XXXXXXXXX',
-          accountNumber: 'XXXXXXXXX',
           reference: `CT-${orderId.slice(0, 8).toUpperCase()}`,
           amount: `$${amountUsd.toFixed(2)} USD`,
-          note: 'Include the reference number in your wire memo. Funds typically clear within 1-2 business days.',
+          note: 'Wire transfer details will be provided once your payment provider is configured. Contact support for manual wire instructions.',
         };
       case 'ACH':
         return {
           method: 'ACH Bank Transfer',
-          bankName: 'Constitutional Tender Trust Bank',
-          routingNumber: 'XXXXXXXXX',
-          accountNumber: 'XXXXXXXXX',
           reference: `CT-${orderId.slice(0, 8).toUpperCase()}`,
           amount: `$${amountUsd.toFixed(2)} USD`,
-          note: 'ACH transfers typically clear within 3-5 business days.',
+          note: 'ACH transfer details will be provided once your payment provider is configured.',
         };
       case 'CRYPTO':
         return {
           method: 'Cryptocurrency',
           acceptedCurrencies: 'BTC, ETH, USDC',
-          walletAddress: 'Will be provided after payment provider integration',
           amount: `$${amountUsd.toFixed(2)} USD equivalent`,
-          note: 'Crypto payments are confirmed after sufficient network confirmations.',
+          note: 'Crypto payment integration coming soon. Contact support for manual crypto payment.',
         };
       default:
         return { note: 'Contact support for payment instructions.' };
@@ -118,58 +117,112 @@ export class PaymentsService {
   }
 
   /**
-   * Get a payment intent by ID
+   * Get a payment record by ID
    */
-  async getPaymentIntent(intentId: string): Promise<PaymentIntent | null> {
-    return this.paymentIntents.get(intentId) || null;
+  async getPaymentIntent(intentId: string) {
+    const record = await this.prisma.paymentRecord.findUnique({
+      where: { id: intentId },
+    });
+    if (!record) throw new NotFoundException(`Payment ${intentId} not found`);
+    return this.formatPaymentResponse(record);
   }
 
   /**
-   * Get payment intent for an order
+   * Get payment record for an order
    */
-  async getPaymentIntentForOrder(orderId: string): Promise<PaymentIntent | null> {
-    for (const intent of this.paymentIntents.values()) {
-      if (intent.orderId === orderId) return intent;
-    }
-    return null;
+  async getPaymentIntentForOrder(orderId: string) {
+    const record = await this.prisma.paymentRecord.findUnique({
+      where: { orderId },
+    });
+    if (!record) return null;
+    return this.formatPaymentResponse(record);
   }
 
   /**
    * Confirm a payment (admin action or webhook callback)
    */
-  async confirmPayment(intentId: string): Promise<PaymentIntent> {
-    const intent = this.paymentIntents.get(intentId);
-    if (!intent) {
-      throw new BadRequestException(`Payment intent ${intentId} not found`);
+  async confirmPayment(intentId: string) {
+    const record = await this.prisma.paymentRecord.update({
+      where: { id: intentId },
+      data: { status: 'completed' },
+    });
+
+    // Advance order status
+    try {
+      await this.ordersService.advanceOrderStatus(record.orderId, 'FUNDS_CONFIRMED', 'Payment confirmed');
+      await this.notificationsService.sendFundsConfirmed(record.orderId);
+    } catch (error) {
+      this.logger.error(`Failed to advance order ${record.orderId} after payment: ${error}`);
     }
 
-    intent.status = 'completed';
-    this.paymentIntents.set(intentId, intent);
-
-    this.logger.log(`Payment confirmed: ${intentId} for order ${intent.orderId}`);
-    return intent;
+    this.logger.log(`Payment confirmed: ${intentId} for order ${record.orderId}`);
+    return this.formatPaymentResponse(record);
   }
 
   /**
-   * Handle Stripe webhook (placeholder)
+   * Handle Stripe webhook
    */
   async handleWebhook(payload: Buffer, signature: string): Promise<void> {
-    // if (this.stripeKey && this.stripeWebhookSecret) {
-    //   const stripe = require('stripe')(this.stripeKey);
-    //   const event = stripe.webhooks.constructEvent(payload, signature, this.stripeWebhookSecret);
-    //
-    //   switch (event.type) {
-    //     case 'payment_intent.succeeded':
-    //       const intentId = event.data.object.metadata.intentId;
-    //       await this.confirmPayment(intentId);
-    //       // Also advance order status
-    //       break;
-    //     case 'payment_intent.payment_failed':
-    //       // Handle failure
-    //       break;
-    //   }
-    // }
+    if (!this.stripe || !this.stripeWebhookSecret) {
+      this.logger.log('Webhook received but Stripe not configured — ignoring');
+      return;
+    }
 
-    this.logger.log('Webhook received (Stripe integration pending)');
+    let event: any;
+    try {
+      event = this.stripe.webhooks.constructEvent(payload, signature, this.stripeWebhookSecret);
+    } catch (err) {
+      this.logger.error(`Webhook signature verification failed: ${err}`);
+      throw new BadRequestException('Invalid webhook signature');
+    }
+
+    switch (event.type) {
+      case 'payment_intent.succeeded': {
+        const intent = event.data.object;
+        const orderId = intent.metadata?.orderId;
+        if (orderId) {
+          const record = await this.prisma.paymentRecord.findUnique({ where: { orderId } });
+          if (record) {
+            await this.confirmPayment(record.id);
+            this.logger.log(`Stripe payment succeeded for order ${orderId}`);
+          }
+        }
+        break;
+      }
+      case 'payment_intent.payment_failed': {
+        const intent = event.data.object;
+        const orderId = intent.metadata?.orderId;
+        if (orderId) {
+          await this.prisma.paymentRecord.updateMany({
+            where: { orderId },
+            data: { status: 'failed' },
+          });
+          this.logger.warn(`Stripe payment failed for order ${orderId}`);
+        }
+        break;
+      }
+    }
+  }
+
+  private formatPaymentResponse(record: {
+    id: string;
+    orderId: string;
+    externalId: string | null;
+    rail: PaymentRail;
+    amountUsd: { toNumber?: () => number } | number;
+    status: string;
+    createdAt: Date;
+  }) {
+    return {
+      id: record.id,
+      orderId: record.orderId,
+      rail: record.rail,
+      amountUsd: typeof record.amountUsd === 'number' ? record.amountUsd : record.amountUsd.toNumber?.() ?? record.amountUsd,
+      status: record.status,
+      externalId: record.externalId,
+      stripeClientSecret: null as string | null,
+      instructions: {} as Record<string, string>,
+      createdAt: record.createdAt.toISOString(),
+    };
   }
 }

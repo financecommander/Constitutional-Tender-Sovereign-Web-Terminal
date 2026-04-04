@@ -1,7 +1,19 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { QuotesService } from '../quotes/quotes.service';
 import { PaymentRail, OrderStatus } from '@prisma/client';
+
+// Valid order status transitions
+const VALID_TRANSITIONS: Record<string, string[]> = {
+  PRICE_LOCKED: ['FUNDS_CONFIRMED', 'CANCELLED'],
+  FUNDS_CONFIRMED: ['SUPPLIER_CONFIRMED', 'CANCELLED'],
+  SUPPLIER_CONFIRMED: ['SHIPMENT_CREATED', 'VAULT_ALLOCATED', 'CANCELLED'],
+  SHIPMENT_CREATED: ['IN_TRANSIT', 'CANCELLED'],
+  IN_TRANSIT: ['DELIVERED'],
+  DELIVERED: [],
+  VAULT_ALLOCATED: [],
+  CANCELLED: [],
+};
 
 @Injectable()
 export class OrdersService {
@@ -23,6 +35,15 @@ export class OrdersService {
       shipCountry?: string;
     },
   ) {
+    // KYC gate: verify user identity before allowing orders
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { kycStatus: true },
+    });
+    if (user?.kycStatus !== 'VERIFIED') {
+      throw new ForbiddenException('KYC verification required before placing orders. Please complete identity verification first.');
+    }
+
     // Validate quote is active and belongs to user
     const quote = await this.quotesService.validateQuoteForOrder(quoteId, userId);
 
@@ -168,6 +189,14 @@ export class OrdersService {
     const order = await this.prisma.order.findUnique({ where: { id: orderId } });
     if (!order) {
       throw new NotFoundException(`Order ${orderId} not found`);
+    }
+
+    // Validate status transition
+    const allowedNext = VALID_TRANSITIONS[order.status] || [];
+    if (!allowedNext.includes(newStatus)) {
+      throw new BadRequestException(
+        `Cannot transition from ${order.status} to ${newStatus}. Allowed: ${allowedNext.join(', ') || 'none'}`,
+      );
     }
 
     await this.prisma.$transaction(async (tx) => {

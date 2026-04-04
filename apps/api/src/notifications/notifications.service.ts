@@ -1,20 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 
-/**
- * Email Notifications Service
- *
- * Sends transactional emails for order lifecycle events.
- * Currently logs to console (demo mode).
- *
- * To integrate a real email provider:
- * 1. npm install @sendgrid/mail  (or resend, or nodemailer)
- * 2. Set EMAIL_PROVIDER in .env (sendgrid | resend | smtp)
- * 3. Set EMAIL_API_KEY in .env
- * 4. Set EMAIL_FROM in .env (e.g., orders@constitutionaltender.com)
- * 5. Uncomment the provider-specific send methods below
- */
-
 export interface EmailPayload {
   to: string;
   subject: string;
@@ -33,12 +19,11 @@ export class NotificationsService {
   constructor(private readonly prisma: PrismaService) {
     if (this.provider === 'console') {
       this.logger.warn('EMAIL_PROVIDER not set — emails will be logged to console');
+    } else {
+      this.logger.log(`Email provider: ${this.provider}`);
     }
   }
 
-  /**
-   * Send an email
-   */
   async send(payload: EmailPayload): Promise<boolean> {
     try {
       switch (this.provider) {
@@ -57,67 +42,55 @@ export class NotificationsService {
     }
   }
 
-  /**
-   * Console output (demo mode)
-   */
   private async sendToConsole(payload: EmailPayload): Promise<boolean> {
     this.logger.log(`[EMAIL] To: ${payload.to} | Subject: ${payload.subject}`);
     this.logger.debug(`[EMAIL BODY] ${payload.text || payload.html.slice(0, 200)}`);
     return true;
   }
 
-  /**
-   * SendGrid integration (placeholder)
-   */
   private async sendViaSendGrid(payload: EmailPayload): Promise<boolean> {
-    // const sgMail = require('@sendgrid/mail');
-    // sgMail.setApiKey(this.apiKey);
-    // await sgMail.send({
-    //   to: payload.to,
-    //   from: this.fromEmail,
-    //   subject: payload.subject,
-    //   html: payload.html,
-    //   text: payload.text,
-    // });
-    this.logger.log(`[SendGrid] Would send to ${payload.to}: ${payload.subject}`);
+    const sgMail = require('@sendgrid/mail');
+    sgMail.setApiKey(this.apiKey);
+    await sgMail.send({
+      to: payload.to,
+      from: this.fromEmail,
+      subject: payload.subject,
+      html: payload.html,
+      text: payload.text,
+    });
+    this.logger.log(`[SendGrid] Sent to ${payload.to}: ${payload.subject}`);
     return true;
   }
 
-  /**
-   * Resend integration (placeholder)
-   */
   private async sendViaResend(payload: EmailPayload): Promise<boolean> {
-    // const { Resend } = require('resend');
-    // const resend = new Resend(this.apiKey);
-    // await resend.emails.send({
-    //   from: this.fromEmail,
-    //   to: payload.to,
-    //   subject: payload.subject,
-    //   html: payload.html,
-    // });
-    this.logger.log(`[Resend] Would send to ${payload.to}: ${payload.subject}`);
+    const { Resend } = require('resend');
+    const resend = new Resend(this.apiKey);
+    await resend.emails.send({
+      from: this.fromEmail,
+      to: payload.to,
+      subject: payload.subject,
+      html: payload.html,
+    });
+    this.logger.log(`[Resend] Sent to ${payload.to}: ${payload.subject}`);
     return true;
   }
 
-  /**
-   * SMTP integration (placeholder)
-   */
   private async sendViaSmtp(payload: EmailPayload): Promise<boolean> {
-    // const nodemailer = require('nodemailer');
-    // const transporter = nodemailer.createTransport({
-    //   host: process.env.SMTP_HOST,
-    //   port: parseInt(process.env.SMTP_PORT || '587'),
-    //   secure: process.env.SMTP_SECURE === 'true',
-    //   auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
-    // });
-    // await transporter.sendMail({
-    //   from: this.fromEmail,
-    //   to: payload.to,
-    //   subject: payload.subject,
-    //   html: payload.html,
-    //   text: payload.text,
-    // });
-    this.logger.log(`[SMTP] Would send to ${payload.to}: ${payload.subject}`);
+    const nodemailer = require('nodemailer');
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: parseInt(process.env.SMTP_PORT || '587'),
+      secure: process.env.SMTP_SECURE === 'true',
+      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+    });
+    await transporter.sendMail({
+      from: this.fromEmail,
+      to: payload.to,
+      subject: payload.subject,
+      html: payload.html,
+      text: payload.text,
+    });
+    this.logger.log(`[SMTP] Sent to ${payload.to}: ${payload.subject}`);
     return true;
   }
 
@@ -205,7 +178,7 @@ export class NotificationsService {
     };
   }
 
-  private orderConfirmationTemplate(order: any): string {
+  private orderConfirmationTemplate(order: Record<string, unknown>): string {
     return `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background: #102a43; padding: 24px; text-align: center;">
@@ -229,7 +202,7 @@ export class NotificationsService {
     `;
   }
 
-  private statusUpdateTemplate(order: any, status: string, message: string): string {
+  private statusUpdateTemplate(order: Record<string, unknown>, status: string, message: string): string {
     return `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background: #102a43; padding: 24px; text-align: center;">

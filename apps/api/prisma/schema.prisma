@@ -302,9 +302,13 @@ model Order {
   createdAt    DateTime     @default(now()) @map("created_at")
   updatedAt    DateTime     @updatedAt @map("updated_at")
 
-  quote  Quote        @relation(fields: [quoteId], references: [id], onDelete: Cascade)
-  user   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  events OrderEvent[]
+  quote   Quote          @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  events  OrderEvent[]
+  payment PaymentRecord?
+
+  trackingNumber  String? @map("tracking_number")
+  trackingCarrier String? @map("tracking_carrier")
 
   @@index([userId])
   @@index([status])
@@ -369,4 +373,22 @@ model SavingsPlan {
   @@index([userId])
   @@index([nextRunAt])
   @@map("savings_plans")
+}
+
+// ── Payment Records ────────────────────────────────────────
+
+model PaymentRecord {
+  id          String      @id @default(uuid())
+  orderId     String      @unique @map("order_id")
+  externalId  String?     @map("external_id") // Stripe PaymentIntent ID
+  rail        PaymentRail
+  amountUsd   Decimal     @map("amount_usd")
+  status      String      @default("pending") // pending, processing, completed, failed
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([externalId])
+  @@map("payment_records")
 }

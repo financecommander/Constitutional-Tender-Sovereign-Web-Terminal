@@ -19,6 +19,8 @@ import { SavingsModule } from './savings/savings.module';
 import { PrismaService } from './prisma.service';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from './auth/guards/permissions.guard';
+import { CleanupService } from './common/cleanup.service';
+import { HealthController } from './common/health.controller';
 
 @Module({
   imports: [
@@ -55,8 +57,10 @@ import { PermissionsGuard } from './auth/guards/permissions.guard';
     ReviewsModule,
     SavingsModule,
   ],
+  controllers: [HealthController],
   providers: [
     PrismaService,
+    CleanupService,
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,

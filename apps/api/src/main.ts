@@ -3,8 +3,10 @@ import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { PrismaExceptionFilter } from './filters/prisma-exception.filter';
 import { validateEnv } from './config/env.validation';
+import { initSentry } from './common/sentry';
 
 async function bootstrap() {
+  initSentry();
   const env = validateEnv();
 
   const app = await NestFactory.create(AppModule, {
@@ -24,10 +26,11 @@ async function bootstrap() {
         contentSecurityPolicy: {
           directives: {
             defaultSrc: ["'self'"],
-            scriptSrc: ["'self'"],
+            scriptSrc: ["'self'", 'https://js.stripe.com'],
             styleSrc: ["'self'", "'unsafe-inline'"],
             imgSrc: ["'self'", 'data:', 'https:'],
-            connectSrc: ["'self'", env.FRONTEND_URL],
+            connectSrc: ["'self'", env.FRONTEND_URL, 'https://api.stripe.com', 'https://*.ingest.sentry.io'],
+            frameSrc: ["'self'", 'https://js.stripe.com'],
             fontSrc: ["'self'"],
             objectSrc: ["'none'"],
             frameAncestors: ["'none'"],

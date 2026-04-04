@@ -65,47 +65,62 @@ export class SpotFeedService implements OnModuleInit {
   /**
    * Fetch from real metals API
    */
+  private consecutiveFailures = 0;
+  private readonly MAX_FAILURES = 3;
+
   private async fetchFromApi() {
     try {
-      const url = `${this.apiUrl}/latest?access_key=${this.apiKey}&base=USD&symbols=XAU,XAG,XPT,XPD`;
+      let prices: Record<string, number> = {};
 
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(`API returned ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      if (data.success === false) {
-        this.logger.warn(`Metals API error: ${data.error?.info || 'Unknown error'}`);
-        await this.simulatePrices();
-        return;
-      }
-
-      // Most metals APIs return rates as 1/price (how many oz per USD)
-      // Convert to USD per oz
-      const metals: { metal: Metal; symbol: string }[] = [
-        { metal: 'XAU', symbol: 'XAU' },
-        { metal: 'XAG', symbol: 'XAG' },
-        { metal: 'XPT', symbol: 'XPT' },
-        { metal: 'XPD', symbol: 'XPD' },
-      ];
-
-      for (const { metal, symbol } of metals) {
-        const rate = data.rates?.[symbol];
-        if (rate && rate > 0) {
-          const spotUsdPerOz = 1 / rate;
-          const prev = this.simulatedPrices[metal]?.prevClose || spotUsdPerOz;
-          const changePct = ((spotUsdPerOz - prev) / prev) * 100;
-
-          await this.spotService.updateSpot(metal, spotUsdPerOz, changePct, this.provider);
-          this.simulatedPrices[metal] = { price: spotUsdPerOz, prevClose: prev };
+      if (this.provider === 'goldapi') {
+        // GoldAPI.io uses per-metal requests with header auth
+        const metals = ['XAU', 'XAG', 'XPT', 'XPD'];
+        for (const metal of metals) {
+          const response = await fetch(`https://www.goldapi.io/api/${metal}/USD`, {
+            headers: { 'x-access-token': this.apiKey },
+          });
+          if (response.ok) {
+            const data = await response.json();
+            if (data.price) prices[metal] = data.price;
+          }
+        }
+      } else {
+        // metals-api.com / metalpriceapi.com format
+        const url = `${this.apiUrl}/latest?access_key=${this.apiKey}&base=USD&symbols=XAU,XAG,XPT,XPD`;
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`API returned ${response.status}`);
+        const data = await response.json();
+        if (data.success === false) {
+          this.logger.warn(`Metals API error: ${data.error?.info || 'Unknown error'}`);
+          throw new Error(data.error?.info || 'API error');
+        }
+        // Rates are 1/price (oz per USD) — invert to USD per oz
+        for (const metal of ['XAU', 'XAG', 'XPT', 'XPD']) {
+          const rate = data.rates?.[metal];
+          if (rate && rate > 0) prices[metal] = 1 / rate;
         }
       }
 
+      if (Object.keys(prices).length === 0) {
+        throw new Error('No prices returned from API');
+      }
+
+      for (const [metal, spotUsdPerOz] of Object.entries(prices)) {
+        const prev = this.simulatedPrices[metal]?.prevClose || spotUsdPerOz;
+        const changePct = ((spotUsdPerOz - prev) / prev) * 100;
+        await this.spotService.updateSpot(metal as Metal, spotUsdPerOz, changePct, this.provider);
+        this.simulatedPrices[metal] = { price: spotUsdPerOz, prevClose: prev };
+      }
+
+      this.consecutiveFailures = 0;
       this.logger.debug('Updated spot prices from API');
     } catch (error) {
-      this.logger.warn(`API fetch failed, falling back to simulation: ${error}`);
+      this.consecutiveFailures++;
+      if (this.consecutiveFailures >= this.MAX_FAILURES) {
+        this.logger.warn(`API failed ${this.consecutiveFailures} times consecutively, using simulated prices`);
+      } else {
+        this.logger.warn(`API fetch failed (${this.consecutiveFailures}/${this.MAX_FAILURES}): ${error}`);
+      }
       await this.simulatePrices();
     }
   }
