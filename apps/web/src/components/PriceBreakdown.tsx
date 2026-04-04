@@ -22,7 +22,7 @@ export function PriceBreakdown({
   const unitPrice = (spotUsd + premiumUsd + spreadUsd) * weightOz;
 
   return (
-    <div className="space-y-2 text-sm">
+    <div className="space-y-3 text-sm">
       <div className="flex justify-between">
         <span className="text-navy-400">Spot Price</span>
         <span className="text-white">${spotUsd.toFixed(2)}/oz</span>
@@ -39,7 +39,7 @@ export function PriceBreakdown({
         <span className="text-navy-400">Weight</span>
         <span className="text-white">{weightOz} oz</span>
       </div>
-      <div className="border-t border-navy-700 my-1" />
+      <div className="border-t border-white/8 my-1" />
       <div className="flex justify-between">
         <span className="text-navy-400">Unit Price</span>
         <span className="text-white">${unitPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
@@ -54,10 +54,10 @@ export function PriceBreakdown({
           <span className="text-white">+${shippingUsd.toFixed(2)}</span>
         </div>
       )}
-      <div className="border-t border-navy-700 my-1" />
+      <div className="border-t border-white/8 my-1" />
       <div className="flex justify-between items-center">
         <span className="text-white font-semibold">Total</span>
-        <span className="text-xl font-bold text-gold-400">
+        <span className="font-display text-3xl font-semibold text-gold-300">
           ${totalUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </span>
       </div>

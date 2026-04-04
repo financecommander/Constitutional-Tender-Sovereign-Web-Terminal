@@ -1,16 +1,47 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Manrope:wght@400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --foreground: #d9e2ec;
-  --background: #102a43;
+  --foreground: #efe8db;
+  --background: #08111d;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: 'Georgia', 'Times New Roman', serif;
+  font-family: 'Manrope', sans-serif;
+  background-image:
+    radial-gradient(circle at top left, rgba(222, 139, 26, 0.16), transparent 22%),
+    radial-gradient(circle at top right, rgba(56, 189, 248, 0.12), transparent 18%),
+    linear-gradient(180deg, #0a1321 0%, #08111d 50%, #0b1524 100%);
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.32), transparent 84%);
+}
+
+h1,
+h2,
+h3,
+h4,
+.font-display {
+  font-family: 'Cormorant Garamond', serif;
+  letter-spacing: 0.01em;
 }
 
 /* Scrollbar styling for dark theme */
@@ -18,14 +49,14 @@ body {
   width: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #1a3a5c;
+  background: #12243a;
 }
 ::-webkit-scrollbar-thumb {
-  background: #486581;
+  background: #43617d;
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #627d98;
+  background: #5d7d98;
 }
 
 /* Print styles for receipts */

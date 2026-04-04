@@ -91,16 +91,16 @@ export function QuoteLockPanel({ sku, offerId, quantity, deliveryType, disabled 
 
   if (quote && secondsLeft > 0) {
     return (
-      <div className="bg-navy-800 border border-gold-500/30 rounded-lg p-5 space-y-4">
+      <div className="rounded-[28px] border border-gold-500/25 bg-[linear-gradient(180deg,rgba(18,33,53,0.94),rgba(10,21,35,0.92))] p-6 space-y-5 shadow-[0_20px_55px_rgba(0,0,0,0.18)]">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-gold-400 uppercase tracking-wider">Price Locked</h3>
+          <h3 className="text-sm font-semibold text-gold-300 uppercase tracking-[0.2em]">Price Locked</h3>
           <div className={`text-sm font-bold ${secondsLeft <= 10 ? 'text-red-400' : 'text-green-400'}`}>
             {secondsLeft}s
           </div>
         </div>
 
         {/* Countdown bar */}
-        <div className="w-full h-1.5 bg-navy-700 rounded-full overflow-hidden">
+        <div className="w-full h-1.5 bg-navy-700/80 rounded-full overflow-hidden">
           <div
             className={`h-full rounded-full transition-all duration-1000 ${
               secondsLeft <= 10 ? 'bg-red-400' : 'bg-gold-400'
@@ -119,14 +119,14 @@ export function QuoteLockPanel({ sku, offerId, quantity, deliveryType, disabled 
           totalUsd={quote.totalUsd}
         />
 
-        <div className="text-xs text-navy-400 space-y-1">
+        <div className="rounded-2xl border border-white/8 bg-white/5 p-3 text-xs text-navy-300 space-y-1">
           <div>Supplier: {quote.supplierName}</div>
           <div>ETA: {quote.shipEtaDays} business days</div>
         </div>
 
         <button
           onClick={proceedToCheckout}
-          className="w-full py-3 rounded-lg font-semibold text-sm bg-gold-500 text-navy-900 hover:bg-gold-400 transition-colors"
+          className="w-full rounded-full py-3 font-semibold text-sm uppercase tracking-[0.14em] bg-gold-500 text-navy-900 hover:bg-gold-400 transition-colors"
         >
           Proceed to Checkout
         </button>
@@ -135,11 +135,11 @@ export function QuoteLockPanel({ sku, offerId, quantity, deliveryType, disabled 
   }
 
   return (
-    <div className="bg-navy-800 border border-navy-700 rounded-lg p-5 space-y-4">
-      <h3 className="text-sm font-semibold text-navy-400 uppercase tracking-wider">Lock Price</h3>
+    <div className="rounded-[28px] border border-white/8 bg-[linear-gradient(180deg,rgba(18,33,53,0.94),rgba(10,21,35,0.92))] p-6 space-y-5 shadow-[0_20px_55px_rgba(0,0,0,0.18)]">
+      <h3 className="text-sm font-semibold text-navy-300 uppercase tracking-[0.2em]">Lock Price</h3>
 
       {error && (
-        <div className="bg-red-900/20 border border-red-800 rounded p-2 text-red-400 text-xs">
+        <div className="bg-red-900/20 border border-red-800 rounded-xl p-3 text-red-400 text-xs">
           {error}
         </div>
       )}
@@ -147,7 +147,7 @@ export function QuoteLockPanel({ sku, offerId, quantity, deliveryType, disabled 
       <button
         onClick={lockPrice}
         disabled={disabled || loading}
-        className={`w-full py-3 rounded-lg font-semibold text-sm transition-colors ${
+        className={`w-full rounded-full py-3 font-semibold text-sm uppercase tracking-[0.14em] transition-colors ${
           disabled || loading
             ? 'bg-navy-700 text-navy-500 cursor-not-allowed'
             : 'bg-gold-500 text-navy-900 hover:bg-gold-400'

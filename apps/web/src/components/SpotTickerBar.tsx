@@ -40,14 +40,14 @@ function MetalTick({ spot }: { spot: MetalSpot }) {
 
   return (
     <div className="flex items-center gap-2 text-sm whitespace-nowrap px-4">
-      <span className="bg-sky-500/60 text-sky-900 font-bold text-xs px-1.5 py-0.5 rounded">
+      <span className="bg-gold-500/15 text-gold-300 border border-gold-500/20 font-bold text-[11px] px-1.5 py-0.5 rounded-md">
         {symbol}
       </span>
-      <span className="text-sky-900 font-medium">{label}</span>
-      <span className="text-navy-900 font-bold">
+      <span className="text-navy-200 font-medium">{label}</span>
+      <span className="text-white font-bold">
         ${spot.spotUsdPerOz.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
       </span>
-      <span className={`text-xs font-semibold ${isPositive ? 'text-green-800' : 'text-red-800'}`}>
+      <span className={`text-xs font-semibold ${isPositive ? 'text-emerald-400' : 'text-rose-400'}`}>
         {isPositive ? '▲' : '▼'} {isPositive ? '+' : ''}{spot.changePct24h.toFixed(2)}%
       </span>
     </div>
@@ -63,45 +63,45 @@ export function SpotTickerBar({ spots, connectionStatus, lastUpdate }: SpotTicke
     .filter(Boolean) as MetalSpot[];
 
   return (
-    <div className="bg-sky-400 border-b border-sky-500 relative overflow-hidden">
+    <div className="relative overflow-hidden border-b border-white/8 bg-[linear-gradient(180deg,rgba(14,25,39,0.94),rgba(10,19,31,0.94))]">
       <div className="flex items-center">
         {/* Status indicator pinned left */}
-        <div className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 bg-sky-400 z-10 border-r border-sky-500/40">
+        <div className="flex-shrink-0 flex items-center gap-1.5 px-4 py-3 z-10 border-r border-white/8">
           <span className={`w-2 h-2 rounded-full ${statusCfg.dotClass}`} />
-          <span className="text-sky-800 font-medium text-xs">{statusCfg.label}</span>
+          <span className="text-navy-300 font-medium text-xs uppercase tracking-[0.18em]">{statusCfg.label}</span>
         </div>
 
         {/* Scrolling ticker */}
-        <div className="flex-1 overflow-hidden py-2">
+        <div className="flex-1 overflow-hidden py-3">
           <div className="ticker-scroll flex">
             {/* First copy */}
             <div className="flex items-center shrink-0">
               {sortedSpots.map((spot) => (
                 <MetalTick key={`a-${spot.metal}`} spot={spot} />
               ))}
-              <span className="text-sky-600/50 px-3">|</span>
+              <span className="text-white/10 px-3">|</span>
             </div>
             {/* Second copy (for seamless loop) */}
             <div className="flex items-center shrink-0">
               {sortedSpots.map((spot) => (
                 <MetalTick key={`b-${spot.metal}`} spot={spot} />
               ))}
-              <span className="text-sky-600/50 px-3">|</span>
+              <span className="text-white/10 px-3">|</span>
             </div>
             {/* Third copy (extra buffer for wide screens) */}
             <div className="flex items-center shrink-0">
               {sortedSpots.map((spot) => (
                 <MetalTick key={`c-${spot.metal}`} spot={spot} />
               ))}
-              <span className="text-sky-600/50 px-3">|</span>
+              <span className="text-white/10 px-3">|</span>
             </div>
           </div>
         </div>
 
         {/* Timestamp pinned right */}
         {lastUpdate && (
-          <div className="flex-shrink-0 px-3 py-2 bg-sky-400 z-10 border-l border-sky-500/40">
-            <span className="text-sky-800 text-xs">
+          <div className="flex-shrink-0 px-4 py-3 z-10 border-l border-white/8">
+            <span className="text-navy-400 text-xs">
               {new Date(lastUpdate).toLocaleTimeString()}
             </span>
           </div>
