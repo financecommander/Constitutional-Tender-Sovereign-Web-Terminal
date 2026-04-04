@@ -7,6 +7,14 @@ export const metadata: Metadata = {
   title: 'Constitutional Tender | Lawful Money. Modern Execution.',
   description:
     'Live pricing, transparent spreads, and auditable receipts for gold and silver ownership.',
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/icon.svg', type: 'image/svg+xml' },
+    ],
+    shortcut: '/favicon.ico',
+    apple: '/icon.svg',
+  },
 };
 
 export default function RootLayout({
